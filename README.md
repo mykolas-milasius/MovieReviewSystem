@@ -28,45 +28,45 @@ Projekte privaloma sukurti:
 ## API metodai (REST, JSON, JWT)
 
 ### 1.  Filmo žanras
-POST   /genres         – sukurti žanrą
-GET    /genres/{id}    – gauti žanrą pagal ID
-PUT    /genres/{id}    – atnaujinti žanrą
-DELETE /genres/{id}    – ištrinti žanrą
-GET    /genres         – gauti visų žanrų sąrašą
+- `POST   /genres`         – sukurti žanrą
+- `GET    /genres/{id}`    – gauti žanrą pagal ID
+- `PUT    /genres/{id}`    – atnaujinti žanrą
+- `DELETE /genres/{id}`    – ištrinti žanrą
+- `GET    /genres`         – gauti visų žanrų sąrašą
 
 ### 2. Filmas
-POST   /movies             – sukurti filmą
-GET    /movies/{id}        – gauti filmą pagal ID
-PUT    /movies/{id}        – atnaujinti filmą
-DELETE /movies/{id}        – ištrinti filmą
-GET    /genres/{id}/movies – gauti visus žanro filmus (hierarchinis metodas)
+- `POST   /movies`             – sukurti filmą
+- `GET    /movies/{id}`        – gauti filmą pagal ID
+- `PUT    /movies/{id}`        – atnaujinti filmą
+- `DELETE /movies/{id}`        – ištrinti filmą
+- `GET    /genres/{id}/movies` – gauti visus žanro filmus (hierarchinis metodas)
 
 ### 3. Recenzija
-POST   /reviews            – sukurti recenziją
-GET    /reviews/{id}       – gauti recenziją pagal ID
-PUT    /reviews/{id}       – atnaujinti recenziją
-DELETE /reviews/{id}       – ištrinti recenziją
-GET    /movies/{id}/reviews – gauti visas konkretaus filmo recenzijas (hierarchinis metodas)
+- `POST   /reviews`             – sukurti recenziją
+- `GET    /reviews/{id}`        – gauti recenziją pagal ID
+- `PUT    /reviews/{id}`        – atnaujinti recenziją
+- `DELETE /reviews/{id}`        – ištrinti recenziją
+- `GET    /movies/{id}/reviews` – gauti visas konkretaus filmo recenzijas (hierarchinis metodas)
 
 ### 4. Aktorius
-POST   /actors             – sukurti aktorių
-GET    /actors/{id}        – gauti aktorių pagal ID
-PUT    /actors/{id}        – atnaujinti aktoriaus duomenis
-DELETE /actors/{id}        – ištrinti aktorių
-GET    /movies/{id}/actors – gauti konkretaus filmo aktorius (hierarchinis metodas)
+- `POST   /actors`             – sukurti aktorių
+- `GET    /actors/{id}`        – gauti aktorių pagal ID
+- `PUT    /actors/{id}`        – atnaujinti aktoriaus duomenis
+- `DELETE /actors/{id}`        – ištrinti aktorių
+- `GET    /movies/{id}/actors` – gauti konkretaus filmo aktorius (hierarchinis metodas)
 
 
 ### 5. Vartotojas
-POST   /users        – sukurti vartotoją
-GET    /users/{id}   – gauti vartotoją pagal ID
-PUT    /users/{id}   – atnaujinti vartotojo duomenis
-DELETE /users/{id}   – ištrinti vartotoją
-GET    /users        – gauti vartotojų sąrašą
+- `POST   /users`        – sukurti vartotoją
+- `GET    /users/{id}`   – gauti vartotoją pagal ID
+- `PUT    /users/{id}`   – atnaujinti vartotojo duomenis
+- `DELETE /users/{id}`   – ištrinti vartotoją
+- `GET    /users`        – gauti vartotojų sąrašą
 
 ## Nefunkciniai reikalavimai
 
-Duomenų bazė: relacinė (PostgreSQL / MS SQL)
-API: C#, RESTful, dokumentuota su OpenAPI (Swagger)
-Autentifikacija: JWT su Access + Refresh Token strategija
-GUI: React + Mantine UI, lentelės atvaizduojamos su MantineReactTable
-Debesų infrastruktūra: TBD
+- Duomenų bazė: relacinė (PostgreSQL / MS SQL)
+- API: C#, RESTful, dokumentuota su OpenAPI (Swagger)
+- Autentifikacija: JWT su Access + Refresh Token strategija
+- GUI: React + Mantine UI, lentelės atvaizduojamos su MantineReactTable
+- Debesų infrastruktūra: TBD
