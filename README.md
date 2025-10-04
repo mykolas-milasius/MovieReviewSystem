@@ -39,7 +39,7 @@ Projekte privaloma sukurti:
 - `GET    /movies/{id}`        – gauti filmą pagal ID
 - `PUT    /movies/{id}`        – atnaujinti filmą
 - `DELETE /movies/{id}`        – ištrinti filmą
-- `GET    /genres/{id}/movies` – gauti visus žanro filmus (hierarchinis metodas)
+- `GET    /movies/{id}/genres` – gauti visus žanro filmus (hierarchinis metodas)
 
 ### 3. Recenzija
 - `POST   /reviews`             – sukurti recenziją
