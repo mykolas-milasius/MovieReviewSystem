@@ -91,7 +91,10 @@ namespace WebAPI.Services
 
         public async Task<MovieResponseDTO?> UpdateMovieAsync(UpdateMovieDTO request)
         {
-            var movie = await _context.Movies.FirstOrDefaultAsync(e => e.Id == request.Id);
+            var movie = await _context.Movies
+                .Include(m => m.Actors)
+                .Include(m => m.Genres)
+                .FirstOrDefaultAsync(e => e.Id == request.Id);
 
             if (movie == null)
             {
