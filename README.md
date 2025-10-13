@@ -47,7 +47,7 @@ Projekte privaloma sukurti:
 - `PUT    /reviews/{id}`        – atnaujinti recenziją
 - `DELETE /reviews/{id}`        – ištrinti recenziją
 - `GET    /movies/{id}/reviews` – gauti visas konkretaus filmo recenzijas (hierarchinis metodas)
-
+- `GET    /genres/{genreId}/movies/{movieId}/reviews - gauti visas konkretaus filmo recenzijas pagal filmą ir žanrą (hierarchinis metodas)
 ### 4. Aktorius
 - `POST   /actors`             – sukurti aktorių
 - `GET    /actors/{id}`        – gauti aktorių pagal ID
