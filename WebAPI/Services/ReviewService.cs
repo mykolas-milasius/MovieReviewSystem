@@ -73,6 +73,25 @@ namespace WebAPI.Services
             };
         }
 
+        public async Task<List<ReviewResponseDTO>> GetReviewsByGenreAndMovie(int genreId, int movieId)
+        {
+            var reviews = await _context.Reviews
+                .Include(r => r.Movie)
+                .ThenInclude(m => m.Genres)
+                .Where(e => e.MovieId == movieId && e.Movie.Genres.Any(g => g.Id == genreId))
+                .ToListAsync();
+
+            return reviews.Select(review => new ReviewResponseDTO
+            {
+                Id = review.Id,
+                Author = review.Author,
+                Content = review.Content,
+                Rating = review.Rating,
+                CreatedAt = review.CreatedAt,
+                MovieId = review.MovieId
+            }).ToList();
+        }
+
         public async Task<ReviewResponseDTO?> UpdateReviewAsync(UpdateReviewDTO request)
         {
             var review = await _context.Reviews.FirstOrDefaultAsync(e => e.Id == request.Id);

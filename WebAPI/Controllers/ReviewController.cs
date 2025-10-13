@@ -95,5 +95,23 @@ namespace WebAPI.Controllers
 
             return NoContent();
         }
+
+        [HttpGet("genres/{genreId}/movies/{movieId}/reviews")]
+        public async Task<IActionResult> GetReviewsByGenreAndMovie(int genreId, int movieId)
+        {
+            if (genreId <= 0 || movieId <= 0)
+            {
+                return BadRequest("GenreId and MovieId must be greater than 0.");
+            }
+
+            var result = await _reviewService.GetReviewsByGenreAndMovie(genreId, movieId);
+
+            if (!result.Any())
+            {
+                return NotFound($"No reviews found for genreId {genreId} and movieId {movieId}.");
+            }
+
+            return Ok(result);
+        }
     }
 }

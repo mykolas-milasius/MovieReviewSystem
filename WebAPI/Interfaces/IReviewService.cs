@@ -1,4 +1,5 @@
-﻿using WebAPI.DTOs.Actor;
+﻿using Microsoft.AspNetCore.Mvc;
+using WebAPI.DTOs.Actor;
 using WebAPI.DTOs.Review;
 
 namespace WebAPI.Interfaces
@@ -9,5 +10,7 @@ namespace WebAPI.Interfaces
         Task<ReviewResponseDTO?> UpdateReviewAsync(UpdateReviewDTO request);
         Task<ReviewResponseDTO?> GetReviewByIdAsync(int id);
         Task<bool> DeleteReviewAsync(int id);
+        Task<List<ReviewResponseDTO>> GetReviewsByGenreAndMovie(int genreId, int movieId);
+
     }
 }
