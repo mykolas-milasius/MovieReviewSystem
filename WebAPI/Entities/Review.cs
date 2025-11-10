@@ -1,4 +1,6 @@
-﻿namespace WebAPI.Entities
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace WebAPI.Entities
 {
     public class Review
     {
@@ -8,7 +10,10 @@
         public int Rating { get; set; }
         public DateTime CreatedAt { get; set; }
         public int MovieId { get; set; }
+        [Required]
+        public string UserId { get; set; }
         // Navigational
         public Movie? Movie { get; set; }
+        public User? User { get; set; }
     }
 }
