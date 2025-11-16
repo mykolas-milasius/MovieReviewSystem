@@ -1,3 +1,8 @@
 .vs/
 bin/
 obj/
+/WebAPI/appsettings.Production.json
+/WebAPI/Properties/PublishProfiles
+/WebAPI/Properties/ServiceDependencies/saitynaiz - Web Deploy
+/WebAPI/Properties/ServiceDependencies/WebAPI20251110211240 - Zip Deploy
+/WebAPI/WebAPI.csproj.user
