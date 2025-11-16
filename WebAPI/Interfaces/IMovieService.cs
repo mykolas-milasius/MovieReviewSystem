@@ -8,7 +8,7 @@ namespace WebAPI.Interfaces
 {
     public interface IMovieService
     {
-        Task<MovieResponseDTO> CreateMovieAsync(CreateMovieDTO request);
+        Task<MovieResponseDTO> CreateMovieAsync(CreateMovieDTO request, HttpContext httpContext);
         Task<MovieResponseDTO?> UpdateMovieAsync(UpdateMovieDTO request);
         Task<MovieResponseDTO?> GetMovieByIdAsync(int id);
         Task<bool> DeleteMovieAsync(int id);

@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using WebAPI.Data;
 using WebAPI.DTOs.Actor;
 using WebAPI.DTOs.Genre;
@@ -17,13 +20,14 @@ namespace WebAPI.Services
         {
             _context = context;
         }
-        public async Task<MovieResponseDTO> CreateMovieAsync(CreateMovieDTO request)
+        public async Task<MovieResponseDTO> CreateMovieAsync(CreateMovieDTO request, HttpContext httpContext)
         {
             var movie = new Movie()
             {
                 Title = request.Title,
                 ReleaseDate = request.ReleaseDate,
-                Rating = request.Rating
+                Rating = request.Rating,
+                UserId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)
             };
 
             if (request.ActorIds.Any())
@@ -56,7 +60,7 @@ namespace WebAPI.Services
             };
         }
 
-        public async Task<bool> DeleteMovieAsync(int id)
+		public async Task<bool> DeleteMovieAsync(int id)
         {
             var movie = await _context.Movies.FirstOrDefaultAsync(e => e.Id == id);
 
@@ -197,7 +201,7 @@ namespace WebAPI.Services
                 Author = e.Author,
                 Content = e.Content,
                 Rating = e.Rating,
-                CreatedAt = e.CreatedAt
+                CreatedAt = e.CreatedAt,
             }).ToList();
 
             return result;

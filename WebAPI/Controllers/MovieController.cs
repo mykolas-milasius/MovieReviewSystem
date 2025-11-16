@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WebAPI.DTOs.Movie;
 using WebAPI.Interfaces;
 
@@ -28,7 +29,7 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Movie title is required");
             }
 
-            var result = await _movieService.CreateMovieAsync(request);
+            var result = await _movieService.CreateMovieAsync(request, HttpContext);
             return CreatedAtAction(nameof(GetMovieById), new { id = result.Id }, result);
         }
 
@@ -79,7 +80,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteMovie([FromQuery] int id)
+		[Authorize(Roles = "Admin")]
+		public async Task<IActionResult> DeleteMovie([FromQuery] int id)
         {
             if (id <= 0)
             {
