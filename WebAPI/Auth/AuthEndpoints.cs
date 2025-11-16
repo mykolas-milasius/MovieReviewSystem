@@ -63,7 +63,8 @@ namespace WebAPI.Auth
 
             //login
 
-            app.MapPost("api/login", async (UserManager<User> userManager, JwtTokenService jwtTokenService, LoginDTO dto, HttpContext httpContext) =>
+            app.MapPost("api/login", async (UserManager<User> userManager, JwtTokenService jwtTokenService, LoginDTO dto, HttpContext httpContext,
+                SessionService sessionService) =>
             {
                 // check user exists
                 var user = await userManager.FindByNameAsync(dto.UserName);
@@ -84,9 +85,12 @@ namespace WebAPI.Auth
 
                 var expiresAt = DateTime.UtcNow.AddDays(3);
                 var accessToken = jwtTokenService.CreateAccessToken(user.UserName, user.Id, roles);
-                var refreshToken = jwtTokenService.CreateRefreshToken(user.Id, expiresAt);
+                var sessionId = Guid.NewGuid();
+				var refreshToken = jwtTokenService.CreateRefreshToken(sessionId, user.Id, expiresAt);
 
-                var cookieOptions = new CookieOptions
+                await sessionService.CreateSessionAsync(sessionId, user.Id, refreshToken, expiresAt);
+
+				var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
                     Expires = expiresAt,
@@ -99,45 +103,90 @@ namespace WebAPI.Auth
 				return Results.Ok(new SuccessfullLoginDTO(accessToken));
             });
 
-            app.MapPost("api/accessToken", async (UserManager<User> userManager, JwtTokenService jwtTokenService, HttpContext httpContext) =>
+            app.MapPost("api/accessToken", async (UserManager<User> userManager, JwtTokenService jwtTokenService, HttpContext httpContext,
+                SessionService sessionService) =>
             {
-            if (!httpContext.Request.Cookies.TryGetValue("RefreshToken", out var refreshToken))
-            {
-                return Results.UnprocessableEntity();
-            }
+                if (!httpContext.Request.Cookies.TryGetValue("RefreshToken", out var refreshToken))
+                {
+                    return Results.UnprocessableEntity();
+                }
 
-            if (!jwtTokenService.TryParseRefreshToken(refreshToken, out var claims))
-            {
-                return Results.UnprocessableEntity();
-            }
+                if (!jwtTokenService.TryParseRefreshToken(refreshToken, out var claims))
+                {
+                    return Results.UnprocessableEntity();
+                }
 
-            var userId = claims.FindFirstValue(JwtRegisteredClaimNames.Sub);
-            var user = await userManager.FindByIdAsync(userId);
+                var sessionId = claims.FindFirstValue("SessionId");
 
-            if (user == null)
-            {
-                return Results.UnprocessableEntity();
-            }
+                if (string.IsNullOrEmpty(sessionId))
+                {
+                    return Results.UnprocessableEntity();
+			    }
 
-            var roles = await userManager.GetRolesAsync(user);
+                var sessionIdAsGuid = Guid.Parse(sessionId);
 
-            var expiresAt = DateTime.UtcNow.AddDays(3);
-            var accessToken = jwtTokenService.CreateAccessToken(user.UserName, user.Id, roles);
-            var newRefreshToken = jwtTokenService.CreateRefreshToken(user.Id, expiresAt);
+                if (!await sessionService.IsSessionValidAsync(sessionIdAsGuid, refreshToken))
+                {
+                    return Results.UnprocessableEntity();
+			    }
 
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Expires = expiresAt,
-                SameSite = SameSiteMode.Lax,
-                //Secure = true,
-            };
+			    var userId = claims.FindFirstValue(JwtRegisteredClaimNames.Sub);
+                var user = await userManager.FindByIdAsync(userId);
 
-            httpContext.Response.Cookies.Append("RefreshToken", refreshToken, cookieOptions);
+                if (user == null)
+                {
+                    return Results.UnprocessableEntity();
+                }
 
-            return Results.Ok(new SuccessfullLoginDTO(accessToken));
+                var roles = await userManager.GetRolesAsync(user);
+
+                var expiresAt = DateTime.UtcNow.AddDays(3);
+                var accessToken = jwtTokenService.CreateAccessToken(user.UserName, user.Id, roles);
+                var newRefreshToken = jwtTokenService.CreateRefreshToken(sessionIdAsGuid, user.Id, expiresAt);
+
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Expires = expiresAt,
+                    SameSite = SameSiteMode.Lax,
+                    //Secure = true,
+                };
+
+                httpContext.Response.Cookies.Append("RefreshToken", refreshToken, cookieOptions);
+
+                await sessionService.ExtendSessionAsync(sessionIdAsGuid, newRefreshToken, expiresAt);
+
+			    return Results.Ok(new SuccessfullLoginDTO(accessToken));
 			});
-        }
+
+			app.MapPost("api/logout", async (UserManager<User> userManager, JwtTokenService jwtTokenService, HttpContext httpContext,
+	SessionService sessionService) =>
+			{
+				if (!httpContext.Request.Cookies.TryGetValue("RefreshToken", out var refreshToken))
+				{
+					return Results.UnprocessableEntity();
+				}
+
+				if (!jwtTokenService.TryParseRefreshToken(refreshToken, out var claims))
+				{
+					return Results.UnprocessableEntity();
+				}
+
+				var sessionId = claims.FindFirstValue("SessionId");
+
+				if (string.IsNullOrEmpty(sessionId))
+				{
+					return Results.UnprocessableEntity();
+				}
+
+				var sessionIdAsGuid = Guid.Parse(sessionId);
+
+                await sessionService.InvalidateSessionAsync(sessionIdAsGuid);
+                httpContext.Response.Cookies.Delete("RefreshToken");
+
+				return Results.Ok();
+			});
+		}
     }
     public record RegisterUserDTO(string UserName, string Email,string Password);
     public record LoginDTO(string UserName, string Password);

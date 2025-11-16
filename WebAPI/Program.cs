@@ -35,8 +35,9 @@ namespace WebAPI
             builder.Services.AddScoped<IReviewService, ReviewService>();
             builder.Services.AddTransient<JwtTokenService>();
             builder.Services.AddScoped<AuthSeeder>();
+            builder.Services.AddTransient<SessionService>();
 
-            builder.Services.AddIdentity<User, IdentityRole>()
+			builder.Services.AddIdentity<User, IdentityRole>()
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
 

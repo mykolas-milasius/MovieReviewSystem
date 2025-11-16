@@ -40,12 +40,13 @@ namespace WebAPI.Auth
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-		public string CreateRefreshToken(string userId, DateTime expires)
+		public string CreateRefreshToken(Guid sessionId, string userId, DateTime expires)
 		{
 			var authClaims = new List<Claim>
 			{
 				new Claim (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 				new Claim (JwtRegisteredClaimNames.Sub, userId),
+                new Claim ("SessionId", sessionId.ToString()),
 			};
 
 			var token = new JwtSecurityToken(
