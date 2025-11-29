@@ -1,5 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
+using System.Security.Claims;
 using WebAPI.DTOs.Actor;
 using WebAPI.Entities;
 using WebAPI.Interfaces;
@@ -17,8 +21,17 @@ namespace WebAPI.Controllers
             _actorService = actorService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateActor([FromBody] CreateActorDTO request)
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllActors()
+        {
+            var result = await _actorService.GetAllActorsAsync();
+
+			return Ok(result);
+		}
+
+		[HttpPost]
+		[Authorize]
+		public async Task<IActionResult> CreateActor([FromBody] CreateActorDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -30,7 +43,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("First name and last name are required.");
             }
 
-            var result = await _actorService.CreateActorAsync(request);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _actorService.CreateActorAsync(request, userId);
             return CreatedAtAction(nameof(GetActorById), new { id = result.Id }, result);
         }
 
@@ -53,7 +73,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateActor([FromBody] UpdateActorDTO request)
+		[Authorize]
+		public async Task<IActionResult> UpdateActor([FromBody] UpdateActorDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -70,7 +91,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("First name and last name are required.");
             }
 
-            var result = await _actorService.UpdateActorAsync(request);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _actorService.UpdateActorAsync(request, userId);
 
             if (result == null)
             {
@@ -81,14 +109,22 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteActor([FromQuery] int id)
+		[Authorize]
+		public async Task<IActionResult> DeleteActor([FromQuery] int id, HttpContext httpContext)
         {
             if (id <= 0)
             {
                 return BadRequest("Id cannot be equal or less than 0");
             }
 
-            var deleted = await _actorService.DeleteActorAsync(id);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var deleted = await _actorService.DeleteActorAsync(id, userId);
 
             if (!deleted)
             {

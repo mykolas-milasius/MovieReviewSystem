@@ -6,10 +6,10 @@ namespace WebAPI.Interfaces
 {
     public interface IReviewService
     {
-        Task<ReviewResponseDTO> CreateReviewAsync(CreateReviewDTO request);
-        Task<ReviewResponseDTO?> UpdateReviewAsync(UpdateReviewDTO request);
+        Task<ReviewResponseDTO> CreateReviewAsync(CreateReviewDTO request, string userId);
+        Task<ReviewResponseDTO?> UpdateReviewAsync(UpdateReviewDTO request, string userId);
         Task<ReviewResponseDTO?> GetReviewByIdAsync(int id);
-        Task<bool> DeleteReviewAsync(int id);
+        Task<bool> DeleteReviewAsync(int id, string userId);
         Task<List<ReviewResponseDTO>> GetReviewsByGenreAndMovie(int genreId, int movieId);
 
     }

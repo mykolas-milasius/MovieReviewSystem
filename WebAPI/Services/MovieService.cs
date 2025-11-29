@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using WebAPI.Auth;
 using WebAPI.Data;
 using WebAPI.DTOs.Actor;
 using WebAPI.DTOs.Genre;
@@ -15,19 +17,21 @@ namespace WebAPI.Services
     public class MovieService : IMovieService
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<User> _userManager;
 
-        public MovieService(AppDbContext context)
+        public MovieService(AppDbContext context, UserManager<User> userManager)
         {
             _context = context;
-        }
-        public async Task<MovieResponseDTO> CreateMovieAsync(CreateMovieDTO request, HttpContext httpContext)
+            _userManager = userManager;
+		}
+        public async Task<MovieResponseDTO> CreateMovieAsync(CreateMovieDTO request, string userId)
         {
             var movie = new Movie()
             {
                 Title = request.Title,
                 ReleaseDate = request.ReleaseDate,
                 Rating = request.Rating,
-                UserId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                UserId = userId
             };
 
             if (request.ActorIds.Any())
@@ -60,7 +64,7 @@ namespace WebAPI.Services
             };
         }
 
-		public async Task<bool> DeleteMovieAsync(int id)
+		public async Task<bool> DeleteMovieAsync(int id, string userId)
         {
             var movie = await _context.Movies.FirstOrDefaultAsync(e => e.Id == id);
 
@@ -69,7 +73,21 @@ namespace WebAPI.Services
                 return false;
             }
 
-            _context.Movies.Remove(movie);
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return false;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (movie.UserId != userId && !isAdmin)
+			{
+				return false;
+			}
+
+			_context.Movies.Remove(movie);
             await _context.SaveChangesAsync();
 
             return true;
@@ -93,7 +111,7 @@ namespace WebAPI.Services
             };
         }
 
-        public async Task<MovieResponseDTO?> UpdateMovieAsync(UpdateMovieDTO request)
+        public async Task<MovieResponseDTO?> UpdateMovieAsync(UpdateMovieDTO request, string userId)
         {
             var movie = await _context.Movies
                 .Include(m => m.Actors)
@@ -105,7 +123,21 @@ namespace WebAPI.Services
                 return null;
             }
 
-            movie.Title = request.Title;
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return null;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (movie.UserId != userId && !isAdmin)
+			{
+				return null;
+			}
+
+			movie.Title = request.Title;
             movie.ReleaseDate = request.ReleaseDate;
             movie.Rating = request.Rating;
 
@@ -202,6 +234,23 @@ namespace WebAPI.Services
                 Content = e.Content,
                 Rating = e.Rating,
                 CreatedAt = e.CreatedAt,
+            }).ToList();
+
+            return result;
+        }
+
+        public async Task<List<MovieResponseDTO>> GetAllMovies()
+        {
+            var movies = await _context.Movies
+                .AsNoTracking()
+                .ToListAsync();
+
+            var result = movies.Select(e => new MovieResponseDTO
+            {
+                Id = e.Id,
+                Rating = e.Rating,
+                ReleaseDate = e.ReleaseDate,
+                Title = e.Title
             }).ToList();
 
             return result;

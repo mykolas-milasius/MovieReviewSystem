@@ -25,8 +25,19 @@ namespace WebAPI
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-            builder.Services.AddEndpointsApiExplorer();
+			builder.Services.AddCors(options =>
+			{
+				options.AddDefaultPolicy(policy =>
+				{
+					policy.WithOrigins("http://localhost:3000")
+						  .AllowAnyHeader()
+						  .AllowAnyMethod()
+						  .AllowCredentials();
+				});
+			});
+
+			// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+			builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddScoped<IActorService, ActorService>();
@@ -65,7 +76,9 @@ namespace WebAPI
             var dbSeeder = scope.ServiceProvider.GetRequiredService<AuthSeeder>();
             await dbSeeder.SeedAsync();
 
-            app.AddAuthApi();
+			app.UseCors();
+
+			app.AddAuthApi();
 
             if (app.Environment.IsDevelopment())
             {

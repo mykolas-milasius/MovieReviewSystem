@@ -4,9 +4,10 @@ namespace WebAPI.Interfaces
 {
     public interface IActorService
     {
-        Task<ActorResponseDTO> CreateActorAsync(CreateActorDTO request);
-        Task<ActorResponseDTO?> UpdateActorAsync(UpdateActorDTO request);
+        Task<ActorResponseDTO> CreateActorAsync(CreateActorDTO request, string userId);
+        Task<ActorResponseDTO?> UpdateActorAsync(UpdateActorDTO request, string userId));
         Task<ActorResponseDTO?> GetActorByIdAsync(int id);
-        Task<bool> DeleteActorAsync(int id);
-    }
+        Task<bool> DeleteActorAsync(int id, string userId));
+        Task<List<ActorResponseDTO>> GetAllActorsAsync();
+	}
 }

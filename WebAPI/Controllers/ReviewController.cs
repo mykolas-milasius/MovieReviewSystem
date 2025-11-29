@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using WebAPI.DTOs.Review;
 using WebAPI.Interfaces;
 
@@ -16,7 +19,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReview([FromBody] CreateReviewDTO request)
+		[Authorize]
+		public async Task<IActionResult> CreateReview([FromBody] CreateReviewDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -28,7 +32,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Author is required");
             }
 
-            var result = await _reviewService.CreateReviewAsync(request);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _reviewService.CreateReviewAsync(request, userId);
             return CreatedAtAction(nameof(GetReviewById), new { id = result.Id }, result);
         }
 
@@ -51,7 +62,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateReview([FromBody] UpdateReviewDTO request)
+		[Authorize]
+		public async Task<IActionResult> UpdateReview([FromBody] UpdateReviewDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -68,7 +80,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Author is required");
             }
 
-            var result = await _reviewService.UpdateReviewAsync(request);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _reviewService.UpdateReviewAsync(request, userId);
 
             if (result == null)
             {
@@ -79,14 +98,22 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteReview([FromQuery] int id)
+		[Authorize]
+		public async Task<IActionResult> DeleteReview([FromQuery] int id, HttpContext httpContext)
         {
             if (id <= 0)
             {
                 return BadRequest("Id cannot be equal or less than 0");
             }
 
-            var deleted = await _reviewService.DeleteReviewAsync(id);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var deleted = await _reviewService.DeleteReviewAsync(id, userId);
 
             if (!deleted)
             {
@@ -97,7 +124,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("genres/{genreId}/movies/{movieId}/reviews")]
-        public async Task<IActionResult> GetReviewsByGenreAndMovie(int genreId, int movieId)
+		[Authorize]
+		public async Task<IActionResult> GetReviewsByGenreAndMovie(int genreId, int movieId)
         {
             if (genreId <= 0 || movieId <= 0)
             {

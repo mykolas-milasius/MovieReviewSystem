@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using WebAPI.DTOs.Movie;
 using WebAPI.Interfaces;
 
@@ -16,8 +18,16 @@ namespace WebAPI.Controllers
             _movieService = movieService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> CreateMovie([FromBody] CreateMovieDTO request)
+		[HttpGet("all")]
+		public async Task<IActionResult> GetAllMovies()
+		{
+			var result = await _movieService.GetAllMovies();
+			return Ok(result);
+		}
+
+		[HttpPost]
+		[Authorize]
+		public async Task<IActionResult> CreateMovie([FromBody] CreateMovieDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -29,7 +39,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Movie title is required");
             }
 
-            var result = await _movieService.CreateMovieAsync(request, HttpContext);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _movieService.CreateMovieAsync(request, userId);
             return CreatedAtAction(nameof(GetMovieById), new { id = result.Id }, result);
         }
 
@@ -52,7 +69,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateMovie([FromBody] UpdateMovieDTO request)
+		[Authorize]
+		public async Task<IActionResult> UpdateMovie([FromBody] UpdateMovieDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -69,7 +87,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Title is required");
             }
 
-            var result = await _movieService.UpdateMovieAsync(request);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _movieService.UpdateMovieAsync(request, userId);
 
             if (result == null)
             {
@@ -79,16 +104,23 @@ namespace WebAPI.Controllers
             return Ok(result);
         }
 
-        [HttpDelete]
-		[Authorize(Roles = "Admin")]
-		public async Task<IActionResult> DeleteMovie([FromQuery] int id)
+		[HttpDelete]
+		[Authorize]
+		public async Task<IActionResult> DeleteMovie([FromQuery] int id, HttpContext httpContext)
         {
             if (id <= 0)
             {
                 return BadRequest("Id cannot be equal or less than 0");
             }
 
-            var deleted = await _movieService.DeleteMovieAsync(id);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var deleted = await _movieService.DeleteMovieAsync(id, userId);
 
             if (!deleted)
             {
@@ -136,5 +168,5 @@ namespace WebAPI.Controllers
 
             return Ok(result);
         }
-    }
+	}
 }

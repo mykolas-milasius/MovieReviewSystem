@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using WebAPI.Auth;
 using WebAPI.Data;
 using WebAPI.DTOs.Genre;
 using WebAPI.Entities;
@@ -9,19 +11,22 @@ namespace WebAPI.Services
     public class GenreService : IGenreService
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<User> _userManager;
 
-        public GenreService(AppDbContext context)
+        public GenreService(AppDbContext context, UserManager<User> userManager)
         {
             _context = context;
-        }
+            _userManager = userManager;
+		}
 
-        public async Task<GenreResponseDTO> CreateGenreAsync(CreateGenreDTO request)
+        public async Task<GenreResponseDTO> CreateGenreAsync(CreateGenreDTO request, string userId)
         {
             var result = await _context.Genres.AddAsync(new Genre()
             {
                 Title = request.Title,
                 Description = request.Description,
-            });
+                UserId = userId,
+			});
 
             await _context.SaveChangesAsync();
 
@@ -33,7 +38,7 @@ namespace WebAPI.Services
             };
         }
 
-        public async Task<bool> DeleteGenreAsync(int id)
+        public async Task<bool> DeleteGenreAsync(int id, string userId)
         {
             var genre = await _context.Genres.FirstOrDefaultAsync(e => e.Id == id);
 
@@ -42,7 +47,21 @@ namespace WebAPI.Services
                 return false;
             }
 
-            _context.Genres.Remove(genre);
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return false;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (genre.UserId != userId && !isAdmin)
+			{
+				return false;
+			}
+
+			_context.Genres.Remove(genre);
             await _context.SaveChangesAsync();
 
             return true;
@@ -79,7 +98,7 @@ namespace WebAPI.Services
             };
         }
 
-        public async Task<GenreResponseDTO?> UpdateGenreAsync(UpdateGenreDTO request)
+        public async Task<GenreResponseDTO?> UpdateGenreAsync(UpdateGenreDTO request, string userId)
         {
             var genre = await _context.Genres.FirstOrDefaultAsync(e => e.Id == request.Id);
 
@@ -88,7 +107,21 @@ namespace WebAPI.Services
                 return null;
             }
 
-            genre.Title = request.Title;
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return null;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (genre.UserId != userId && !isAdmin)
+			{
+				return null;
+			}
+
+			genre.Title = request.Title;
             genre.Description = request.Description;
 
             await _context.SaveChangesAsync();

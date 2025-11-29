@@ -1,5 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
+using System.Security.Claims;
 using WebAPI.DTOs.Genre;
 using WebAPI.Interfaces;
 
@@ -17,7 +22,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateGenre([FromBody] CreateGenreDTO request)
+		[Authorize]
+		public async Task<IActionResult> CreateGenre([FromBody] CreateGenreDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -29,7 +35,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Genre title is required.");
             }
 
-            var result = await _genreService.CreateGenreAsync(request);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _genreService.CreateGenreAsync(request, userId);
             return CreatedAtAction(nameof(GetGenreById), new { id = result.Id }, result);
         }
 
@@ -52,7 +65,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> UpdateGenre([FromBody] UpdateGenreDTO request)
+		[Authorize]
+		public async Task<IActionResult> UpdateGenre([FromBody] UpdateGenreDTO request, HttpContext httpContext)
         {
             if (request == null)
             {
@@ -69,7 +83,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Genre title is required.");
             }
 
-            var result = await _genreService.UpdateGenreAsync(request);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var result = await _genreService.UpdateGenreAsync(request, userId);
 
             if (result == null)
             {
@@ -80,14 +101,22 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteGenre([FromQuery] int id)
+		[Authorize]
+		public async Task<IActionResult> DeleteGenre([FromQuery] int id, HttpContext httpContext)
         {
             if (id <= 0)
             {
                 return BadRequest("Id cannot be equal or less than 0");
             }
 
-            var deleted = await _genreService.DeleteGenreAsync(id);
+			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized();
+			}
+
+			var deleted = await _genreService.DeleteGenreAsync(id);
 
             if (!deleted)
             {

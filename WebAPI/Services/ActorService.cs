@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.Reflection.Metadata.Ecma335;
+using WebAPI.Auth;
 using WebAPI.Data;
 using WebAPI.DTOs.Actor;
 using WebAPI.Entities;
@@ -9,20 +12,23 @@ namespace WebAPI.Services
     public class ActorService : IActorService
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<User> _userManager;
 
-        public ActorService(AppDbContext context)
+        public ActorService(AppDbContext context, UserManager<User> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        public async Task<ActorResponseDTO> CreateActorAsync(CreateActorDTO request)
+        public async Task<ActorResponseDTO> CreateActorAsync(CreateActorDTO request, string userId)
         {
-            var result = await _context.Actors.AddAsync(new Actor()
+			var result = await _context.Actors.AddAsync(new Actor()
             {
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 BirthDate = request.BirthDate,
                 Bio = request.Bio,
+                UserId = userId
             });
 
             await _context.SaveChangesAsync();
@@ -37,7 +43,7 @@ namespace WebAPI.Services
             };
         }
 
-        public async Task<bool> DeleteActorAsync(int id)
+        public async Task<bool> DeleteActorAsync(int id, string userId)
         {
             var actor = await _context.Actors.FirstOrDefaultAsync(e => e.Id == id);
 
@@ -46,7 +52,21 @@ namespace WebAPI.Services
                 return false;
             }
 
-            _context.Actors.Remove(actor);
+			var user = await _context.Users.FindAsync(userId);
+
+            if (user == null)
+            {
+				return false;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (actor.UserId != userId && !isAdmin)
+			{
+                return false;
+			}
+
+			_context.Actors.Remove(actor);
             await _context.SaveChangesAsync();
 
             return true;
@@ -71,7 +91,7 @@ namespace WebAPI.Services
             };
         }
 
-        public async Task<ActorResponseDTO?> UpdateActorAsync(UpdateActorDTO request)
+        public async Task<ActorResponseDTO?> UpdateActorAsync(UpdateActorDTO request, string userId)
         {
             var actor = await _context.Actors.FirstOrDefaultAsync(e => e.Id == request.Id);
 
@@ -80,7 +100,21 @@ namespace WebAPI.Services
                 return null;
             }
 
-            actor.FirstName = request.FirstName;
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return null;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (actor.UserId != userId && !isAdmin)
+			{
+				return null;
+			}
+
+			actor.FirstName = request.FirstName;
             actor.LastName = request.LastName;
             actor.Bio = request.Bio;
             actor.BirthDate = request.BirthDate;
@@ -96,5 +130,19 @@ namespace WebAPI.Services
                 BirthDate = actor.BirthDate
             };
         }
-    }
+
+        public async Task<List<ActorResponseDTO>> GetAllActorsAsync()
+        {
+            return await _context.Actors
+                .Select(actor => new ActorResponseDTO()
+                {
+                    Id = actor.Id,
+                    FirstName = actor.FirstName,
+                    LastName = actor.LastName,
+                    BirthDate = actor.BirthDate,
+                    Bio = actor.Bio,
+                })
+                .ToListAsync();
+		}
+	}
 }

@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using WebAPI.Auth;
 using WebAPI.Data;
 using WebAPI.DTOs.Review;
 using WebAPI.Entities;
@@ -9,12 +11,14 @@ namespace WebAPI.Services
     public class ReviewService : IReviewService
     {
         private readonly AppDbContext _context;
+        private readonly UserManager<User> _userManager;
 
-        public ReviewService(AppDbContext context)
+        public ReviewService(AppDbContext context, UserManager<User> userManager)
         {
             _context = context;
-        }
-        public async Task<ReviewResponseDTO> CreateReviewAsync(CreateReviewDTO request)
+            _userManager = userManager;
+		}
+        public async Task<ReviewResponseDTO> CreateReviewAsync(CreateReviewDTO request, string userId)
         {
             var result = await _context.Reviews.AddAsync(new Review()
             {
@@ -22,8 +26,9 @@ namespace WebAPI.Services
                 Content = request.Content,
                 Rating = request.Rating,
                 CreatedAt = request.CreatedAt,
-                MovieId = request.MovieId
-            });
+                MovieId = request.MovieId,
+                UserId = userId
+			});
 
             await _context.SaveChangesAsync();
 
@@ -38,7 +43,7 @@ namespace WebAPI.Services
             };
         }
 
-        public async Task<bool> DeleteReviewAsync(int id)
+        public async Task<bool> DeleteReviewAsync(int id, string userId)
         {
             var review = await _context.Reviews.FirstOrDefaultAsync(e => e.Id == id);
 
@@ -47,7 +52,21 @@ namespace WebAPI.Services
                 return false;
             }
 
-            _context.Reviews.Remove(review);
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return false;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (review.UserId != userId && !isAdmin)
+			{
+				return false;
+			}
+
+			_context.Reviews.Remove(review);
             await _context.SaveChangesAsync();
 
             return true;
@@ -92,7 +111,7 @@ namespace WebAPI.Services
             }).ToList();
         }
 
-        public async Task<ReviewResponseDTO?> UpdateReviewAsync(UpdateReviewDTO request)
+        public async Task<ReviewResponseDTO?> UpdateReviewAsync(UpdateReviewDTO request, string userId)
         {
             var review = await _context.Reviews.FirstOrDefaultAsync(e => e.Id == request.Id);
 
@@ -101,7 +120,21 @@ namespace WebAPI.Services
                 return null;
             }
 
-            review.Author = request.Author;
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return null;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (review.UserId != userId && !isAdmin)
+			{
+				return null;
+			}
+
+			review.Author = request.Author;
             review.Content = request.Content;
             review.Rating = request.Rating;
             //review.CreatedAt = request.CreatedAt;
