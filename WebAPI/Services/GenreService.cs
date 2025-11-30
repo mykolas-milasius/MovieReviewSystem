@@ -37,6 +37,7 @@ namespace WebAPI.Services
                 Id = result.Entity.Id,
                 Title = result.Entity.Title,
                 Description = result.Entity.Description,
+                UserId = result.Entity.UserId
             };
         }
 
@@ -78,6 +79,7 @@ namespace WebAPI.Services
                 Id = g.Id,
                 Title = g.Title,
                 Description = g.Description,
+                UserId = g.UserId
             }).ToList();
 
             return result;
@@ -97,6 +99,7 @@ namespace WebAPI.Services
                 Id = result.Id,
                 Title = result.Title,
                 Description = result.Description,
+                UserId = result.UserId
             };
         }
 
@@ -133,6 +136,7 @@ namespace WebAPI.Services
                 Id = genre.Id,
                 Title = genre.Title,
                 Description = genre.Description,
+                UserId = genre.UserId
             };
         }
 
@@ -153,11 +157,13 @@ namespace WebAPI.Services
                 Title = m.Title,
                 ReleaseDate = m.ReleaseDate,
                 Rating = m.Rating,
+                UserId = m.UserId,
                 Genres = m.Genres?.Select(g => new GenreResponseDTO
                 {
                     Id = g.Id,
                     Title = g.Title,
                     Description = g.Description,
+                    UserId = g.UserId
                 }).ToList(),
                 Actors = m.Actors?.Select(a => new ActorResponseDTO
                 {
@@ -165,6 +171,7 @@ namespace WebAPI.Services
                     FirstName = a.FirstName,
                     LastName = a.LastName,
 					Bio = a.Bio,
+                    UserId =a .UserId
                 }).ToList(),
             }).ToList();
 		}

@@ -11,5 +11,6 @@ namespace WebAPI.DTOs.Movie
         public double Rating { get; set; }
         public List<GenreResponseDTO>? Genres { get; set; }
         public List<ActorResponseDTO>? Actors { get; set; }
+        public string UserId { get; set; } = string.Empty;
     }
 }

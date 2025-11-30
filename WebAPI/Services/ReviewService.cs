@@ -39,7 +39,8 @@ namespace WebAPI.Services
                 Content = result.Entity.Content,
                 Rating = result.Entity.Rating,
                 CreatedAt = result.Entity.CreatedAt,
-                MovieId = result.Entity.MovieId
+                MovieId = result.Entity.MovieId,
+                UserId = result.Entity.UserId
             };
         }
 
@@ -88,7 +89,8 @@ namespace WebAPI.Services
                 Content = review.Content,
                 Rating = review.Rating,
                 CreatedAt = review.CreatedAt,
-                MovieId = review.MovieId
+                MovieId = review.MovieId,
+                UserId = review.UserId
             };
         }
 
@@ -107,7 +109,8 @@ namespace WebAPI.Services
                 Content = review.Content,
                 Rating = review.Rating,
                 CreatedAt = review.CreatedAt,
-                MovieId = review.MovieId
+                MovieId = review.MovieId,
+                UserId = review.UserId
             }).ToList();
         }
 
@@ -149,7 +152,8 @@ namespace WebAPI.Services
                 Content = review.Content,
                 Rating = review.Rating,
                 CreatedAt = review.CreatedAt,
-                MovieId = review.MovieId
+                MovieId = review.MovieId,
+                UserId = review.UserId
             };
         }
 
@@ -163,7 +167,8 @@ namespace WebAPI.Services
                 Content = review.Content,
                 Rating = review.Rating,
                 CreatedAt = review.CreatedAt,
-                MovieId = review.MovieId
+                MovieId = review.MovieId,
+                UserId = review.UserId
             }).ToList();
 		}
 	}

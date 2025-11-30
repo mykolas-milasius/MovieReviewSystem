@@ -60,7 +60,8 @@ namespace WebAPI.Services
                 Id = movie.Id,
                 Title = movie.Title,
                 ReleaseDate = movie.ReleaseDate,
-                Rating = movie.Rating
+                Rating = movie.Rating,
+                UserId = movie.UserId
             };
         }
 
@@ -107,7 +108,8 @@ namespace WebAPI.Services
                 Id = movie.Id,
                 Title = movie.Title,
                 ReleaseDate = movie.ReleaseDate,
-                Rating = movie.Rating
+                Rating = movie.Rating,
+                UserId = movie.UserId
             };
         }
 
@@ -174,7 +176,8 @@ namespace WebAPI.Services
                 Id = movie.Id,
                 Title = movie.Title,
                 ReleaseDate = movie.ReleaseDate,
-                Rating = movie.Rating
+                Rating = movie.Rating,
+                UserId = movie.UserId
             };
         }
 
@@ -195,6 +198,7 @@ namespace WebAPI.Services
                 Id = g.Id,
                 Title = g.Title,
                 Description = g.Description,
+                UserId = g.UserId
             }).ToList();
 
             return result;
@@ -214,7 +218,8 @@ namespace WebAPI.Services
                 FirstName = e.FirstName,
                 LastName = e.LastName,
                 BirthDate = e.BirthDate,
-                Bio = e.Bio
+                Bio = e.Bio,
+                UserId = e.UserId
             }).ToList();
 
             return result;
@@ -234,6 +239,7 @@ namespace WebAPI.Services
                 Content = e.Content,
                 Rating = e.Rating,
                 CreatedAt = e.CreatedAt,
+                UserId = e.UserId
             }).ToList();
 
             return result;
@@ -253,6 +259,7 @@ namespace WebAPI.Services
                 Rating = e.Rating,
                 ReleaseDate = e.ReleaseDate,
                 Title = e.Title,
+                UserId = e.UserId,
                 Actors = e.Actors?.Select(a => new ActorResponseDTO
                 {
                     Id = a.Id,
@@ -307,7 +314,8 @@ namespace WebAPI.Services
 				Id = movie.Id,
 				Title = movie.Title,
 				ReleaseDate = movie.ReleaseDate,
-				Rating = movie.Rating
+				Rating = movie.Rating,
+                UserId = movie.UserId
 			};
 		}
 
@@ -338,7 +346,8 @@ namespace WebAPI.Services
 				Id = movie.Id,
 				Title = movie.Title,
 				ReleaseDate = movie.ReleaseDate,
-				Rating = movie.Rating
+				Rating = movie.Rating,
+                UserId = movie.UserId
 			};
 		}
 		public async Task<MovieResponseDTO?> AddActorToMovieAsync(int movieId, int actorId, string userId)
@@ -366,7 +375,8 @@ namespace WebAPI.Services
 				Id = movie.Id,
 				Title = movie.Title,
 				ReleaseDate = movie.ReleaseDate,
-				Rating = movie.Rating
+				Rating = movie.Rating,
+                UserId = movie.UserId
 			};
 		}
 
