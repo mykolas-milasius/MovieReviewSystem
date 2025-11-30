@@ -23,7 +23,7 @@ namespace WebAPI.Controllers
 
         [HttpPost]
 		[Authorize]
-		public async Task<IActionResult> CreateGenre([FromBody] CreateGenreDTO request, HttpContext httpContext)
+		public async Task<IActionResult> CreateGenre([FromBody] CreateGenreDTO request)
         {
             if (request == null)
             {
@@ -35,7 +35,7 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Genre title is required.");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+			string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
 			if (string.IsNullOrEmpty(userId))
 			{
@@ -66,7 +66,7 @@ namespace WebAPI.Controllers
 
         [HttpPut]
 		[Authorize]
-		public async Task<IActionResult> UpdateGenre([FromBody] UpdateGenreDTO request, HttpContext httpContext)
+		public async Task<IActionResult> UpdateGenre([FromBody] UpdateGenreDTO request)
         {
             if (request == null)
             {
@@ -83,7 +83,7 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Genre title is required.");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+			string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
 			if (string.IsNullOrEmpty(userId))
 			{
@@ -102,21 +102,21 @@ namespace WebAPI.Controllers
 
         [HttpDelete]
 		[Authorize]
-		public async Task<IActionResult> DeleteGenre([FromQuery] int id, HttpContext httpContext)
+		public async Task<IActionResult> DeleteGenre([FromQuery] int id)
         {
             if (id <= 0)
             {
                 return BadRequest("Id cannot be equal or less than 0");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+			string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
 			if (string.IsNullOrEmpty(userId))
 			{
 				return Unauthorized();
 			}
 
-			var deleted = await _genreService.DeleteGenreAsync(id);
+			var deleted = await _genreService.DeleteGenreAsync(id, userId);
 
             if (!deleted)
             {
@@ -132,5 +132,12 @@ namespace WebAPI.Controllers
             var result = await _genreService.GetAllAsync();
             return Ok(result);
         }
+
+        [HttpGet("GetMoviesByGenre")]
+        public async Task<IActionResult> GetMoviesByGenreId([FromQuery] int id)
+        {
+            var result = await _genreService.GetMoviesByGenreIdAsync(id);
+            return Ok(result);
+		}
     }
 }

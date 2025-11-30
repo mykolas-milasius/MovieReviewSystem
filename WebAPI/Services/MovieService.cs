@@ -242,7 +242,9 @@ namespace WebAPI.Services
         public async Task<List<MovieResponseDTO>> GetAllMovies()
         {
             var movies = await _context.Movies
-                .AsNoTracking()
+                .Include(e => e.Actors)
+                .Include(e => e.Genres)
+				.AsNoTracking()
                 .ToListAsync();
 
             var result = movies.Select(e => new MovieResponseDTO
@@ -250,10 +252,141 @@ namespace WebAPI.Services
                 Id = e.Id,
                 Rating = e.Rating,
                 ReleaseDate = e.ReleaseDate,
-                Title = e.Title
-            }).ToList();
+                Title = e.Title,
+                Actors = e.Actors?.Select(a => new ActorResponseDTO
+                {
+                    Id = a.Id,
+                    FirstName = a.FirstName,
+                    LastName = a.LastName,
+                    BirthDate = a.BirthDate,
+                    Bio = a.Bio
+                }).ToList(),
+                Genres = e.Genres?.Select(g => new GenreResponseDTO
+                {
+                    Id = g.Id,
+                    Title = g.Title,
+                    Description = g.Description
+                }).ToList()
+			}).ToList();
 
             return result;
         }
-    }
+
+		public async Task<MovieResponseDTO?> UpdateMovieOnlyAsync(UpdateMovieDTO request, string userId)
+		{
+			var movie = await _context.Movies
+				.FirstOrDefaultAsync(e => e.Id == request.Id);
+
+			if (movie == null)
+			{
+				return null;
+			}
+
+			var user = await _context.Users.FindAsync(userId);
+
+			if (user == null)
+			{
+				return null;
+			}
+
+			bool isAdmin = await _userManager.IsInRoleAsync(user, UserRoles.Admin);
+
+			if (movie.UserId != userId && !isAdmin)
+			{
+				return null;
+			}
+
+			movie.Title = request.Title;
+			movie.ReleaseDate = request.ReleaseDate;
+			movie.Rating = request.Rating;
+
+			await _context.SaveChangesAsync();
+
+			return new MovieResponseDTO()
+			{
+				Id = movie.Id,
+				Title = movie.Title,
+				ReleaseDate = movie.ReleaseDate,
+				Rating = movie.Rating
+			};
+		}
+
+		public async Task<MovieResponseDTO> CreateMovieOnlyAsync(CreateMovieDTO request, string userId)
+		{
+			var movie = new Movie()
+			{
+				Title = request.Title,
+				ReleaseDate = request.ReleaseDate,
+				Rating = request.Rating,
+				UserId = userId
+			};
+
+			if (request.GenreIds.Any())
+			{
+				var genres = await _context.Genres
+					.Where(e => request.GenreIds.Contains(e.Id))
+					.ToListAsync();
+
+				movie.Genres = genres;
+			}
+
+			await _context.Movies.AddAsync(movie);
+			await _context.SaveChangesAsync();
+
+			return new MovieResponseDTO()
+			{
+				Id = movie.Id,
+				Title = movie.Title,
+				ReleaseDate = movie.ReleaseDate,
+				Rating = movie.Rating
+			};
+		}
+		public async Task<MovieResponseDTO?> AddActorToMovieAsync(int movieId, int actorId, string userId)
+		{
+			var movie = await _context.Movies
+				.Include(m => m.Actors)
+				.Include(m => m.Genres)
+				.FirstOrDefaultAsync(m => m.Id == movieId && m.UserId == userId);
+
+			if (movie == null)
+				return null;
+
+			var actor = await _context.Actors.FindAsync(actorId);
+			if (actor == null)
+				return null;
+
+			if (!movie.Actors.Any(a => a.Id == actorId))
+			{
+				movie.Actors.Add(actor);
+				await _context.SaveChangesAsync();
+			}
+
+			return new MovieResponseDTO
+			{
+				Id = movie.Id,
+				Title = movie.Title,
+				ReleaseDate = movie.ReleaseDate,
+				Rating = movie.Rating
+			};
+		}
+
+		public async Task<bool> RemoveActorFromMovieAsync(int movieId, int actorId, string userId)
+		{
+			var movie = await _context.Movies
+				.Include(m => m.Actors)
+				.FirstOrDefaultAsync(m => m.Id == movieId && m.UserId == userId);
+
+			if (movie == null)
+				return false;
+
+			var actor = movie.Actors.FirstOrDefault(a => a.Id == actorId);
+			if (actor == null)
+				return false;
+
+			movie.Actors.Remove(actor);
+			await _context.SaveChangesAsync();
+
+			return true;
+		}
+	}
 }

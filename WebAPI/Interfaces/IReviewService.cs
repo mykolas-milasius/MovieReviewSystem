@@ -11,6 +11,6 @@ namespace WebAPI.Interfaces
         Task<ReviewResponseDTO?> GetReviewByIdAsync(int id);
         Task<bool> DeleteReviewAsync(int id, string userId);
         Task<List<ReviewResponseDTO>> GetReviewsByGenreAndMovie(int genreId, int movieId);
-
-    }
+        Task<List<ReviewResponseDTO>> GetAllAsync();
+	}
 }

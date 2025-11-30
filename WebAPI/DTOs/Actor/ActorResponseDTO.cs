@@ -7,6 +7,6 @@
         public string LastName { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; }
         public string Bio { get; set; } = string.Empty;
-        public int UserId { get; set; }
-    }
+        public string UserId { get; set; } = string.Empty;
+	}
 }

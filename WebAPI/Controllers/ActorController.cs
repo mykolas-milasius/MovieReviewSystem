@@ -31,7 +31,7 @@ namespace WebAPI.Controllers
 
 		[HttpPost]
 		[Authorize]
-		public async Task<IActionResult> CreateActor([FromBody] CreateActorDTO request, HttpContext httpContext)
+		public async Task<IActionResult> CreateActor([FromBody] CreateActorDTO request)
         {
             if (request == null)
             {
@@ -43,7 +43,7 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("First name and last name are required.");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+			string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
 			if (string.IsNullOrEmpty(userId))
 			{
@@ -74,7 +74,7 @@ namespace WebAPI.Controllers
 
         [HttpPut]
 		[Authorize]
-		public async Task<IActionResult> UpdateActor([FromBody] UpdateActorDTO request, HttpContext httpContext)
+		public async Task<IActionResult> UpdateActor([FromBody] UpdateActorDTO request)
         {
             if (request == null)
             {
@@ -91,7 +91,7 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("First name and last name are required.");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+			string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
 			if (string.IsNullOrEmpty(userId))
 			{
@@ -110,14 +110,14 @@ namespace WebAPI.Controllers
 
         [HttpDelete]
 		[Authorize]
-		public async Task<IActionResult> DeleteActor([FromQuery] int id, HttpContext httpContext)
+		public async Task<IActionResult> DeleteActor([FromQuery] int id)
         {
             if (id <= 0)
             {
                 return BadRequest("Id cannot be equal or less than 0");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+			string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
 			if (string.IsNullOrEmpty(userId))
 			{

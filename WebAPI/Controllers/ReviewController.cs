@@ -19,8 +19,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPost]
-		[Authorize]
-		public async Task<IActionResult> CreateReview([FromBody] CreateReviewDTO request, HttpContext httpContext)
+        [Authorize]
+        public async Task<IActionResult> CreateReview([FromBody] CreateReviewDTO request)
         {
             if (request == null)
             {
@@ -32,14 +32,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Author is required");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
-			if (string.IsNullOrEmpty(userId))
-			{
-				return Unauthorized();
-			}
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
 
-			var result = await _reviewService.CreateReviewAsync(request, userId);
+            var result = await _reviewService.CreateReviewAsync(request, userId);
             return CreatedAtAction(nameof(GetReviewById), new { id = result.Id }, result);
         }
 
@@ -62,8 +62,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut]
-		[Authorize]
-		public async Task<IActionResult> UpdateReview([FromBody] UpdateReviewDTO request, HttpContext httpContext)
+        [Authorize]
+        public async Task<IActionResult> UpdateReview([FromBody] UpdateReviewDTO request)
         {
             if (request == null)
             {
@@ -80,14 +80,14 @@ namespace WebAPI.Controllers
                 return UnprocessableEntity("Author is required");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
-			if (string.IsNullOrEmpty(userId))
-			{
-				return Unauthorized();
-			}
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
 
-			var result = await _reviewService.UpdateReviewAsync(request, userId);
+            var result = await _reviewService.UpdateReviewAsync(request, userId);
 
             if (result == null)
             {
@@ -98,22 +98,22 @@ namespace WebAPI.Controllers
         }
 
         [HttpDelete]
-		[Authorize]
-		public async Task<IActionResult> DeleteReview([FromQuery] int id, HttpContext httpContext)
+        [Authorize]
+        public async Task<IActionResult> DeleteReview([FromQuery] int id)
         {
             if (id <= 0)
             {
                 return BadRequest("Id cannot be equal or less than 0");
             }
 
-			string userId = httpContext.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            string userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
-			if (string.IsNullOrEmpty(userId))
-			{
-				return Unauthorized();
-			}
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
 
-			var deleted = await _reviewService.DeleteReviewAsync(id, userId);
+            var deleted = await _reviewService.DeleteReviewAsync(id, userId);
 
             if (!deleted)
             {
@@ -124,8 +124,8 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("genres/{genreId}/movies/{movieId}/reviews")]
-		[Authorize]
-		public async Task<IActionResult> GetReviewsByGenreAndMovie(int genreId, int movieId)
+        [Authorize]
+        public async Task<IActionResult> GetReviewsByGenreAndMovie(int genreId, int movieId)
         {
             if (genreId <= 0 || movieId <= 0)
             {
@@ -139,6 +139,13 @@ namespace WebAPI.Controllers
                 return NotFound($"No reviews found for genreId {genreId} and movieId {movieId}.");
             }
 
+            return Ok(result);
+        }
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllReviews()
+        {
+            var result = await _reviewService.GetAllAsync();
             return Ok(result);
         }
     }

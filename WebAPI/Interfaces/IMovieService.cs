@@ -16,5 +16,9 @@ namespace WebAPI.Interfaces
         Task<List<ActorResponseDTO>> GetAllActorsByMovieId(int id);
         Task<List<ReviewResponseDTO>> GetAllReviewsByMovieId(int id);
         Task<List<MovieResponseDTO>> GetAllMovies();
+        Task<MovieResponseDTO?> UpdateMovieOnlyAsync(UpdateMovieDTO request, string userId);
+        Task<MovieResponseDTO> CreateMovieOnlyAsync(CreateMovieDTO request, string userId);
+		Task<MovieResponseDTO?> AddActorToMovieAsync(int movieId, int actorId, string userId);
+		Task<bool> RemoveActorFromMovieAsync(int movieId, int actorId, string userId);
 	}
 }

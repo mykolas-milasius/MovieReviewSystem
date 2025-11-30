@@ -2,7 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using WebAPI.Auth;
 using WebAPI.Data;
+using WebAPI.DTOs.Actor;
 using WebAPI.DTOs.Genre;
+using WebAPI.DTOs.Movie;
 using WebAPI.Entities;
 using WebAPI.Interfaces;
 
@@ -133,5 +135,38 @@ namespace WebAPI.Services
                 Description = genre.Description,
             };
         }
-    }
+
+        public async Task<List<MovieResponseDTO>> GetMoviesByGenreIdAsync(int genreId)
+        {
+            var genre = await _context.Genres
+                .Include(g => g.Movies)
+                .FirstOrDefaultAsync(g => g.Id == genreId);
+
+            if (genre == null || !genre.Movies.Any())
+            {
+                return new List<MovieResponseDTO>();
+            }
+
+            return genre.Movies.Select(m => new MovieResponseDTO
+            {
+                Id = m.Id,
+                Title = m.Title,
+                ReleaseDate = m.ReleaseDate,
+                Rating = m.Rating,
+                Genres = m.Genres?.Select(g => new GenreResponseDTO
+                {
+                    Id = g.Id,
+                    Title = g.Title,
+                    Description = g.Description,
+                }).ToList(),
+                Actors = m.Actors?.Select(a => new ActorResponseDTO
+                {
+                    Id = a.Id,
+                    FirstName = a.FirstName,
+                    LastName = a.LastName,
+					Bio = a.Bio,
+                }).ToList(),
+            }).ToList();
+		}
+	}
 }

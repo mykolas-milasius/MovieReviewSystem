@@ -40,6 +40,7 @@ namespace WebAPI.Services
                 LastName = result.Entity.LastName,
                 BirthDate = result.Entity.BirthDate,
                 Bio = result.Entity.Bio,
+                UserId = result.Entity.UserId
             };
         }
 
@@ -87,7 +88,8 @@ namespace WebAPI.Services
                 FirstName = result.FirstName,
                 LastName = result.LastName,
                 Bio = result.Bio,
-                BirthDate = result.BirthDate
+                BirthDate = result.BirthDate,
+                UserId = result.UserId
             };
         }
 
@@ -127,8 +129,9 @@ namespace WebAPI.Services
                 FirstName = actor.FirstName,
                 LastName = actor.LastName,
                 Bio = actor.Bio,
-                BirthDate = actor.BirthDate
-            };
+                BirthDate = actor.BirthDate,
+				UserId = actor.UserId
+			};
         }
 
         public async Task<List<ActorResponseDTO>> GetAllActorsAsync()
@@ -141,6 +144,7 @@ namespace WebAPI.Services
                     LastName = actor.LastName,
                     BirthDate = actor.BirthDate,
                     Bio = actor.Bio,
+                    UserId = actor.UserId
                 })
                 .ToListAsync();
 		}

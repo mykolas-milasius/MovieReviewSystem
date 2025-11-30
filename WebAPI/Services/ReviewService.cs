@@ -152,5 +152,19 @@ namespace WebAPI.Services
                 MovieId = review.MovieId
             };
         }
-    }
+
+        public async Task<List<ReviewResponseDTO>> GetAllAsync()
+        {
+            var reviews = await _context.Reviews.ToListAsync();
+            return reviews.Select(review => new ReviewResponseDTO
+            {
+                Id = review.Id,
+                Author = review.Author,
+                Content = review.Content,
+                Rating = review.Rating,
+                CreatedAt = review.CreatedAt,
+                MovieId = review.MovieId
+            }).ToList();
+		}
+	}
 }
