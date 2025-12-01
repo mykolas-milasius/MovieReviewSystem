@@ -42,7 +42,12 @@ namespace WebAPI
 			builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddScoped<IActorService, ActorService>();
+			builder.Services.AddSpaStaticFiles(configuration =>
+			{
+				configuration.RootPath = "wwwroot";
+			});
+
+			builder.Services.AddScoped<IActorService, ActorService>();
             builder.Services.AddScoped<IGenreService, GenreService>();
             builder.Services.AddScoped<IMovieService, MovieService>();
             builder.Services.AddScoped<IReviewService, ReviewService>();
@@ -80,6 +85,9 @@ namespace WebAPI
 
 			app.UseCors();
 
+			app.UseStaticFiles();
+			app.UseSpaStaticFiles();
+
 			app.AddAuthApi();
 
             if (app.Environment.IsDevelopment())
@@ -93,7 +101,9 @@ namespace WebAPI
 
             app.MapControllers();
 
-            app.Run();
+			app.MapFallbackToFile("index.html");
+
+			app.Run();
         }
     }
 }
