@@ -29,7 +29,9 @@ namespace WebAPI
 			{
 				options.AddDefaultPolicy(policy =>
 				{
-					policy.WithOrigins("http://localhost:3000")
+					var allowedOrigin = builder.Configuration["AllowedOrigins:FrontendUrl"] ?? "http://localhost:3000";
+
+					policy.WithOrigins(allowedOrigin)
 						  .AllowAnyHeader()
 						  .AllowAnyMethod()
 						  .AllowCredentials();
