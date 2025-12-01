@@ -13,7 +13,7 @@ namespace WebAPI.Auth
         {
             // register
 
-            app.MapPost("api/accounts", async (UserManager<User> userManager, AppDbContext context, RegisterUserDTO dto) =>
+            app.MapPost("/api/accounts", async (UserManager<User> userManager, AppDbContext context, RegisterUserDTO dto) =>
             {
                 // check user exists
                 var user = await userManager.FindByNameAsync(dto.UserName);
@@ -63,7 +63,7 @@ namespace WebAPI.Auth
 
             //login
 
-            app.MapPost("api/login", async (UserManager<User> userManager, JwtTokenService jwtTokenService, LoginDTO dto, HttpContext httpContext,
+            app.MapPost("/api/login", async (UserManager<User> userManager, JwtTokenService jwtTokenService, LoginDTO dto, HttpContext httpContext,
                 SessionService sessionService) =>
             {
                 // check user exists
@@ -103,7 +103,7 @@ namespace WebAPI.Auth
 				return Results.Ok(new SuccessfullLoginDTO(accessToken));
             });
 
-            app.MapPost("api/accessToken", async (UserManager<User> userManager, JwtTokenService jwtTokenService, HttpContext httpContext,
+            app.MapPost("/api/accessToken", async (UserManager<User> userManager, JwtTokenService jwtTokenService, HttpContext httpContext,
                 SessionService sessionService) =>
             {
                 if (!httpContext.Request.Cookies.TryGetValue("RefreshToken", out var refreshToken))
@@ -159,7 +159,7 @@ namespace WebAPI.Auth
 			    return Results.Ok(new SuccessfullLoginDTO(accessToken));
 			});
 
-			app.MapPost("api/logout", async (UserManager<User> userManager, JwtTokenService jwtTokenService, HttpContext httpContext,
+			app.MapPost("/api/logout", async (UserManager<User> userManager, JwtTokenService jwtTokenService, HttpContext httpContext,
 	SessionService sessionService) =>
 			{
 				if (!httpContext.Request.Cookies.TryGetValue("RefreshToken", out var refreshToken))
