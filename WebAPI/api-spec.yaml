@@ -1,0 +1,2218 @@
+openapi: 3.0.3
+info:
+  title: Movie Database WebAPI
+  description: |
+    REST API for managing movies, actors, genres, and reviews.
+    
+    ## Authentication
+    This API uses JWT (JSON Web Token) Bearer authentication. 
+    To access protected endpoints, you need to:
+    1. Register an account via `/api/accounts`
+    2. Login via `/api/login` to receive an access token
+    3. Include the token in the Authorization header: `Bearer <token>`
+    
+    ## Authorization
+    - **User Role**: Can create, read, update, and delete their own resources
+    - **Admin Role**: Can manage all resources regardless of ownership
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User registration, login, token refresh, and logout
+  - name: Actor
+    description: Actor management operations
+  - name: Genre
+    description: Genre management operations
+  - name: Movie
+    description: Movie management operations
+  - name: Review
+    description: Review management operations
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /api/accounts:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user account
+      description: Creates a new user account with the provided credentials. The user is automatically assigned the "User" role.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserDTO'
+            examples:
+              validRegistration:
+                summary: Valid registration
+                value:
+                  userName: "john_doe"
+                  email: "john.doe@example.com"
+                  password: "SecureP@ssw0rd!"
+      responses:
+        '201':
+          description: User successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                success:
+                  summary: Successful registration
+                  value:
+                    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    userName: "john_doe"
+                    email: "john.doe@example.com"
+        '422':
+          description: Unprocessable Entity - Username already taken or invalid data
+          content:
+            application/json:
+              examples:
+                usernameTaken:
+                  summary: Username already exists
+                  value: "Username already taken"
+                invalidData:
+                  summary: Invalid registration data
+                  value: null
+
+  /api/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user and get access token
+      description: |
+        Authenticates the user with username and password. 
+        On success, returns a JWT access token and sets a RefreshToken cookie (HttpOnly).
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDTO'
+            examples:
+              validLogin:
+                summary: Valid login credentials
+                value:
+                  userName: "john_doe"
+                  password: "SecureP@ssw0rd!"
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: RefreshToken cookie (HttpOnly)
+              schema:
+                type: string
+                example: "RefreshToken=eyJhbGciOiJIUzI1NiIs...; HttpOnly; Expires=Thu, 12 Dec 2025 10:00:00 GMT; SameSite=Lax"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessfulLoginDTO'
+              examples:
+                success:
+                  summary: Successful login
+                  value:
+                    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        '422':
+          description: Unprocessable Entity - Invalid credentials
+          content:
+            application/json:
+              examples:
+                userNotFound:
+                  summary: User does not exist
+                  value: "User does not exist"
+                invalidPassword:
+                  summary: Invalid password
+                  value: "UserName or Password is invalid"
+
+  /api/accessToken:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: |
+        Uses the RefreshToken cookie to generate a new access token.
+        Also extends the session and updates the refresh token.
+      operationId: refreshAccessToken
+      responses:
+        '200':
+          description: Token refreshed successfully
+          headers:
+            Set-Cookie:
+              description: Updated RefreshToken cookie
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessfulLoginDTO'
+              examples:
+                success:
+                  summary: Token refreshed
+                  value:
+                    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        '422':
+          description: Unprocessable Entity - Invalid or missing refresh token
+          content:
+            application/json:
+              examples:
+                invalidToken:
+                  summary: Invalid refresh token
+                  value: null
+
+  /api/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user and invalidate session
+      description: Invalidates the current session and removes the RefreshToken cookie.
+      operationId: logoutUser
+      responses:
+        '200':
+          description: Logout successful
+        '422':
+          description: Unprocessable Entity - Invalid or missing refresh token
+
+  # ==================== ACTOR ====================
+  /api/Actor/all:
+    get:
+      tags:
+        - Actor
+      summary: Get all actors
+      description: Retrieves a list of all actors in the database.
+      operationId: getAllActors
+      responses:
+        '200':
+          description: List of actors retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActorResponseDTO'
+              examples:
+                actorsList:
+                  summary: List of actors
+                  value:
+                    - id: 1
+                      firstName: "Leonardo"
+                      lastName: "DiCaprio"
+                      birthDate: "1974-11-11T00:00:00"
+                      bio: "American actor and film producer"
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    - id: 2
+                      firstName: "Margot"
+                      lastName: "Robbie"
+                      birthDate: "1990-07-02T00:00:00"
+                      bio: "Australian actress and producer"
+                      userId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+                emptyList:
+                  summary: No actors found
+                  value: []
+
+  /api/Actor:
+    get:
+      tags:
+        - Actor
+      summary: Get actor by ID
+      description: Retrieves a specific actor by their unique identifier.
+      operationId: getActorById
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Unique identifier of the actor
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Actor found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorResponseDTO'
+              examples:
+                actorFound:
+                  summary: Actor details
+                  value:
+                    id: 1
+                    firstName: "Leonardo"
+                    lastName: "DiCaprio"
+                    birthDate: "1974-11-11T00:00:00"
+                    bio: "American actor and film producer"
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: ID must be greater than 0
+                  value: "Id must be greater than 0."
+        '404':
+          description: Actor not found
+
+    post:
+      tags:
+        - Actor
+      summary: Create a new actor
+      description: Creates a new actor record. Requires authentication.
+      operationId: createActor
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActorDTO'
+            examples:
+              validActor:
+                summary: Valid actor data
+                value:
+                  firstName: "Tom"
+                  lastName: "Hanks"
+                  birthDate: "1956-07-09T00:00:00"
+                  bio: "American actor and filmmaker"
+      responses:
+        '201':
+          description: Actor created successfully
+          headers:
+            Location:
+              description: URL of the created actor
+              schema:
+                type: string
+                example: "/api/Actor?id=3"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorResponseDTO'
+              examples:
+                created:
+                  summary: Created actor
+                  value:
+                    id: 3
+                    firstName: "Tom"
+                    lastName: "Hanks"
+                    birthDate: "1956-07-09T00:00:00"
+                    bio: "American actor and filmmaker"
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                missingNames:
+                  summary: Missing required fields
+                  value: "First name and last name are required."
+
+    put:
+      tags:
+        - Actor
+      summary: Update an existing actor
+      description: Updates an actor's information. Only the owner or admin can update.
+      operationId: updateActor
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateActorDTO'
+            examples:
+              validUpdate:
+                summary: Valid update data
+                value:
+                  id: 1
+                  firstName: "Leonardo"
+                  lastName: "DiCaprio"
+                  birthDate: "1974-11-11T00:00:00"
+                  bio: "American actor, film producer, and environmentalist"
+      responses:
+        '200':
+          description: Actor updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActorResponseDTO'
+              examples:
+                updated:
+                  summary: Updated actor
+                  value:
+                    id: 1
+                    firstName: "Leonardo"
+                    lastName: "DiCaprio"
+                    birthDate: "1974-11-11T00:00:00"
+                    bio: "American actor, film producer, and environmentalist"
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Actor not found or not authorized to update
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Actor not found
+                  value: "Actor with id 999 not found."
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id must be greater than 0."
+                missingNames:
+                  summary: Missing required fields
+                  value: "First name and last name are required."
+
+    delete:
+      tags:
+        - Actor
+      summary: Delete an actor
+      description: Deletes an actor by ID. Only the owner or admin can delete.
+      operationId: deleteActor
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: ID of the actor to delete
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '204':
+          description: Actor deleted successfully
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id cannot be equal or less than 0"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Actor not found or not authorized to delete
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Actor not found
+                  value: "Actor with id 999 not found."
+
+  # ==================== GENRE ====================
+  /api/Genre/All:
+    get:
+      tags:
+        - Genre
+      summary: Get all genres
+      description: Retrieves a list of all genres in the database.
+      operationId: getAllGenres
+      responses:
+        '200':
+          description: List of genres retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenreResponseDTO'
+              examples:
+                genresList:
+                  summary: List of genres
+                  value:
+                    - id: 1
+                      title: "Action"
+                      description: "Action movies with exciting sequences"
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    - id: 2
+                      title: "Comedy"
+                      description: "Light-hearted movies intended to amuse"
+                      userId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+                emptyList:
+                  summary: No genres found
+                  value: []
+
+  /api/Genre:
+    get:
+      tags:
+        - Genre
+      summary: Get genre by ID
+      description: Retrieves a specific genre by its unique identifier.
+      operationId: getGenreById
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Unique identifier of the genre
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Genre found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreResponseDTO'
+              examples:
+                genreFound:
+                  summary: Genre details
+                  value:
+                    id: 1
+                    title: "Action"
+                    description: "Action movies with exciting sequences"
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: ID must be greater than 0
+                  value: "Id must be greater than 0."
+        '404':
+          description: Genre not found
+
+    post:
+      tags:
+        - Genre
+      summary: Create a new genre
+      description: Creates a new genre record. Requires authentication.
+      operationId: createGenre
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGenreDTO'
+            examples:
+              validGenre:
+                summary: Valid genre data
+                value:
+                  title: "Science Fiction"
+                  description: "Movies based on speculative science and technology"
+      responses:
+        '201':
+          description: Genre created successfully
+          headers:
+            Location:
+              description: URL of the created genre
+              schema:
+                type: string
+                example: "/api/Genre?id=3"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreResponseDTO'
+              examples:
+                created:
+                  summary: Created genre
+                  value:
+                    id: 3
+                    title: "Science Fiction"
+                    description: "Movies based on speculative science and technology"
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                missingTitle:
+                  summary: Missing title
+                  value: "Genre title is required."
+
+    put:
+      tags:
+        - Genre
+      summary: Update an existing genre
+      description: Updates a genre's information. Only the owner or admin can update.
+      operationId: updateGenre
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGenreDTO'
+            examples:
+              validUpdate:
+                summary: Valid update data
+                value:
+                  id: 1
+                  title: "Action/Adventure"
+                  description: "Action and adventure movies with thrilling sequences"
+      responses:
+        '200':
+          description: Genre updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenreResponseDTO'
+              examples:
+                updated:
+                  summary: Updated genre
+                  value:
+                    id: 1
+                    title: "Action/Adventure"
+                    description: "Action and adventure movies with thrilling sequences"
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Genre not found or not authorized to update
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Genre not found
+                  value: "Genre with id 999 not found."
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id must be greater than 0."
+                missingTitle:
+                  summary: Missing title
+                  value: "Genre title is required."
+
+    delete:
+      tags:
+        - Genre
+      summary: Delete a genre
+      description: Deletes a genre by ID. Only the owner or admin can delete.
+      operationId: deleteGenre
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: ID of the genre to delete
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '204':
+          description: Genre deleted successfully
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id cannot be equal or less than 0"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Genre not found or not authorized to delete
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Genre not found
+                  value: "Genre with id 999 not found."
+
+  /api/Genre/GetMoviesByGenre:
+    get:
+      tags:
+        - Genre
+      summary: Get movies by genre
+      description: Retrieves all movies that belong to a specific genre.
+      operationId: getMoviesByGenre
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Genre ID to filter movies
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Movies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                moviesList:
+                  summary: Movies in genre
+                  value:
+                    - id: 1
+                      title: "Inception"
+                      releaseDate: "2010-07-16"
+                      rating: 8.8
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      genres:
+                        - id: 1
+                          title: "Action"
+                          description: "Action movies"
+                          userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      actors:
+                        - id: 1
+                          firstName: "Leonardo"
+                          lastName: "DiCaprio"
+                          birthDate: "1974-11-11T00:00:00"
+                          bio: "American actor"
+                          userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                emptyList:
+                  summary: No movies in genre
+                  value: []
+
+  # ==================== MOVIE ====================
+  /api/Movie/all:
+    get:
+      tags:
+        - Movie
+      summary: Get all movies
+      description: Retrieves a list of all movies with their associated actors and genres.
+      operationId: getAllMovies
+      responses:
+        '200':
+          description: List of movies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                moviesList:
+                  summary: List of movies
+                  value:
+                    - id: 1
+                      title: "Inception"
+                      releaseDate: "2010-07-16"
+                      rating: 8.8
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      genres:
+                        - id: 1
+                          title: "Action"
+                          description: "Action movies"
+                      actors:
+                        - id: 1
+                          firstName: "Leonardo"
+                          lastName: "DiCaprio"
+                          birthDate: "1974-11-11T00:00:00"
+                          bio: "American actor"
+                    - id: 2
+                      title: "The Dark Knight"
+                      releaseDate: "2008-07-18"
+                      rating: 9.0
+                      userId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+                      genres:
+                        - id: 1
+                          title: "Action"
+                          description: "Action movies"
+                      actors: []
+                emptyList:
+                  summary: No movies found
+                  value: []
+
+  /api/Movie:
+    get:
+      tags:
+        - Movie
+      summary: Get movie by ID
+      description: Retrieves a specific movie by its unique identifier.
+      operationId: getMovieById
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Unique identifier of the movie
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Movie found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                movieFound:
+                  summary: Movie details
+                  value:
+                    id: 1
+                    title: "Inception"
+                    releaseDate: "2010-07-16"
+                    rating: 8.8
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: ID must be greater than 0
+                  value: "Id must be greater than 0."
+        '404':
+          description: Movie not found
+
+    post:
+      tags:
+        - Movie
+      summary: Create a new movie with actors and genres
+      description: Creates a new movie record with optional associations to actors and genres. Requires authentication.
+      operationId: createMovie
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMovieDTO'
+            examples:
+              movieWithRelations:
+                summary: Movie with actors and genres
+                value:
+                  title: "Interstellar"
+                  releaseDate: "2014-11-07"
+                  rating: 8.6
+                  actorIds: [1, 2]
+                  genreIds: [1, 3]
+              movieOnly:
+                summary: Movie without relations
+                value:
+                  title: "New Movie"
+                  releaseDate: "2024-01-15"
+                  rating: 7.5
+                  actorIds: []
+                  genreIds: []
+      responses:
+        '201':
+          description: Movie created successfully
+          headers:
+            Location:
+              description: URL of the created movie
+              schema:
+                type: string
+                example: "/api/Movie?id=3"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                created:
+                  summary: Created movie
+                  value:
+                    id: 3
+                    title: "Interstellar"
+                    releaseDate: "2014-11-07"
+                    rating: 8.6
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                missingTitle:
+                  summary: Missing title
+                  value: "Movie title is required"
+
+    put:
+      tags:
+        - Movie
+      summary: Update an existing movie with actors and genres
+      description: Updates a movie's information including actor and genre associations. Only the owner or admin can update.
+      operationId: updateMovie
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMovieDTO'
+            examples:
+              validUpdate:
+                summary: Update movie with new relations
+                value:
+                  id: 1
+                  title: "Inception - Director's Cut"
+                  releaseDate: "2010-07-16"
+                  rating: 9.0
+                  actorIds: [1, 2, 3]
+                  genreIds: [1, 2]
+      responses:
+        '200':
+          description: Movie updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                updated:
+                  summary: Updated movie
+                  value:
+                    id: 1
+                    title: "Inception - Director's Cut"
+                    releaseDate: "2010-07-16"
+                    rating: 9.0
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Movie not found or not authorized to update
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Movie not found
+                  value: "Movie with id 999 not found."
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id must be greater than 0."
+                missingTitle:
+                  summary: Missing title
+                  value: "Title is required"
+
+    delete:
+      tags:
+        - Movie
+      summary: Delete a movie
+      description: Deletes a movie by ID. Only the owner or admin can delete.
+      operationId: deleteMovie
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: ID of the movie to delete
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '204':
+          description: Movie deleted successfully
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id cannot be equal or less than 0"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Movie not found or not authorized to delete
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Movie not found
+                  value: "Movie with id 999 not found."
+
+  /api/Movie/MovieOnly:
+    post:
+      tags:
+        - Movie
+      summary: Create a movie with genres only (no actors)
+      description: Creates a new movie with optional genre associations but without actor associations. Requires authentication.
+      operationId: createMovieOnly
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMovieDTO'
+            examples:
+              movieWithGenres:
+                summary: Movie with genres only
+                value:
+                  title: "Documentary Film"
+                  releaseDate: "2024-03-20"
+                  rating: 7.2
+                  actorIds: []
+                  genreIds: [2, 3]
+      responses:
+        '201':
+          description: Movie created successfully
+          headers:
+            Location:
+              description: URL of the created movie
+              schema:
+                type: string
+                example: "/api/Movie?id=4"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                created:
+                  summary: Created movie
+                  value:
+                    id: 4
+                    title: "Documentary Film"
+                    releaseDate: "2024-03-20"
+                    rating: 7.2
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+        '401':
+          description: Unauthorized - Authentication required
+        '422':
+          description: Unprocessable Entity - Validation failed
+
+    put:
+      tags:
+        - Movie
+      summary: Update movie details only (without changing relations)
+      description: Updates only the movie's basic information (title, release date, rating) without modifying actor or genre associations.
+      operationId: updateMovieOnly
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMovieDTO'
+            examples:
+              updateBasicInfo:
+                summary: Update basic movie info
+                value:
+                  id: 1
+                  title: "Inception (IMAX)"
+                  releaseDate: "2010-07-16"
+                  rating: 9.1
+                  actorIds: []
+                  genreIds: []
+      responses:
+        '200':
+          description: Movie updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                updated:
+                  summary: Updated movie
+                  value:
+                    id: 1
+                    title: "Inception (IMAX)"
+                    releaseDate: "2010-07-16"
+                    rating: 9.1
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Movie not found or not authorized to update
+        '422':
+          description: Unprocessable Entity - Validation failed
+
+  /api/Movie/GenresByMovieId:
+    get:
+      tags:
+        - Movie
+      summary: Get genres by movie ID
+      description: Retrieves all genres associated with a specific movie.
+      operationId: getGenresByMovieId
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Movie ID to get genres for
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Genres retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenreResponseDTO'
+              examples:
+                genresList:
+                  summary: Genres for movie
+                  value:
+                    - id: 1
+                      title: "Action"
+                      description: "Action movies"
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    - id: 3
+                      title: "Sci-Fi"
+                      description: "Science fiction"
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                emptyList:
+                  summary: No genres for movie
+                  value: []
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id cannot be equal or less than 0"
+
+  /api/Movie/ActorsByMovieId:
+    get:
+      tags:
+        - Movie
+      summary: Get actors by movie ID
+      description: Retrieves all actors associated with a specific movie.
+      operationId: getActorsByMovieId
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Movie ID to get actors for
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Actors retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActorResponseDTO'
+              examples:
+                actorsList:
+                  summary: Actors in movie
+                  value:
+                    - id: 1
+                      firstName: "Leonardo"
+                      lastName: "DiCaprio"
+                      birthDate: "1974-11-11T00:00:00"
+                      bio: "American actor"
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                emptyList:
+                  summary: No actors in movie
+                  value: []
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id cannot be equal or less than 0"
+
+  /api/Movie/ReviewsByMovieId:
+    get:
+      tags:
+        - Movie
+      summary: Get reviews by movie ID
+      description: Retrieves all reviews for a specific movie.
+      operationId: getReviewsByMovieId
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Movie ID to get reviews for
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Reviews retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewResponseDTO'
+              examples:
+                reviewsList:
+                  summary: Reviews for movie
+                  value:
+                    - id: 1
+                      author: "John Reviewer"
+                      content: "Amazing movie with great visual effects!"
+                      rating: 9
+                      createdAt: "2024-01-15T14:30:00"
+                      movieId: 1
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                emptyList:
+                  summary: No reviews for movie
+                  value: []
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id cannot be equal or less than 0"
+
+  /api/Movie/AddActorToMovie:
+    post:
+      tags:
+        - Movie
+      summary: Add an actor to a movie
+      description: Associates an existing actor with an existing movie. Only the movie owner can perform this action.
+      operationId: addActorToMovie
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: movieId
+          in: query
+          required: true
+          description: ID of the movie
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+        - name: actorId
+          in: query
+          required: true
+          description: ID of the actor to add
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 2
+      responses:
+        '200':
+          description: Actor added to movie successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieResponseDTO'
+              examples:
+                success:
+                  summary: Actor added
+                  value:
+                    id: 1
+                    title: "Inception"
+                    releaseDate: "2010-07-16"
+                    rating: 8.8
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Invalid IDs
+          content:
+            application/json:
+              examples:
+                invalidIds:
+                  summary: Invalid IDs
+                  value: "MovieId and ActorId must be greater than 0"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Movie or Actor not found
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Not found
+                  value: "Movie or Actor not found"
+
+  /api/Movie/RemoveActorFromMovie:
+    delete:
+      tags:
+        - Movie
+      summary: Remove an actor from a movie
+      description: Removes the association between an actor and a movie. Only the movie owner can perform this action.
+      operationId: removeActorFromMovie
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: movieId
+          in: query
+          required: true
+          description: ID of the movie
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+        - name: actorId
+          in: query
+          required: true
+          description: ID of the actor to remove
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 2
+      responses:
+        '204':
+          description: Actor removed from movie successfully
+        '400':
+          description: Bad Request - Invalid IDs
+          content:
+            application/json:
+              examples:
+                invalidIds:
+                  summary: Invalid IDs
+                  value: "MovieId and ActorId must be greater than 0"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Movie or Actor not found, or Actor is not assigned to this Movie
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Not found
+                  value: "Movie or Actor not found, or Actor is not assigned to this Movie"
+
+  # ==================== REVIEW ====================
+  /api/Review/all:
+    get:
+      tags:
+        - Review
+      summary: Get all reviews
+      description: Retrieves a list of all reviews in the database.
+      operationId: getAllReviews
+      responses:
+        '200':
+          description: List of reviews retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewResponseDTO'
+              examples:
+                reviewsList:
+                  summary: List of reviews
+                  value:
+                    - id: 1
+                      author: "John Reviewer"
+                      content: "Amazing movie!"
+                      rating: 9
+                      createdAt: "2024-01-15T14:30:00"
+                      movieId: 1
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    - id: 2
+                      author: "Jane Critic"
+                      content: "Good but could be better"
+                      rating: 7
+                      createdAt: "2024-01-16T10:00:00"
+                      movieId: 1
+                      userId: "b2c3d4e5-f6a7-8901-bcde-f23456789012"
+                emptyList:
+                  summary: No reviews found
+                  value: []
+
+  /api/Review:
+    get:
+      tags:
+        - Review
+      summary: Get review by ID
+      description: Retrieves a specific review by its unique identifier.
+      operationId: getReviewById
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: Unique identifier of the review
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Review found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponseDTO'
+              examples:
+                reviewFound:
+                  summary: Review details
+                  value:
+                    id: 1
+                    author: "John Reviewer"
+                    content: "Amazing movie with stunning visuals and compelling story!"
+                    rating: 9
+                    createdAt: "2024-01-15T14:30:00"
+                    movieId: 1
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: ID must be greater than 0
+                  value: "Id must be greater than 0."
+        '404':
+          description: Review not found
+
+    post:
+      tags:
+        - Review
+      summary: Create a new review
+      description: Creates a new review for a movie. Requires authentication.
+      operationId: createReview
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReviewDTO'
+            examples:
+              validReview:
+                summary: Valid review data
+                value:
+                  author: "Movie Fan"
+                  content: "One of the best movies I've ever seen!"
+                  rating: 10
+                  createdAt: "2024-12-09T15:00:00"
+                  movieId: 1
+                  userId: ""
+      responses:
+        '201':
+          description: Review created successfully
+          headers:
+            Location:
+              description: URL of the created review
+              schema:
+                type: string
+                example: "/api/Review?id=3"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponseDTO'
+              examples:
+                created:
+                  summary: Created review
+                  value:
+                    id: 3
+                    author: "Movie Fan"
+                    content: "One of the best movies I've ever seen!"
+                    rating: 10
+                    createdAt: "2024-12-09T15:00:00"
+                    movieId: 1
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                missingAuthor:
+                  summary: Missing author
+                  value: "Author is required"
+
+    put:
+      tags:
+        - Review
+      summary: Update an existing review
+      description: Updates a review's information. Only the owner or admin can update.
+      operationId: updateReview
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReviewDTO'
+            examples:
+              validUpdate:
+                summary: Valid update data
+                value:
+                  id: 1
+                  author: "John Reviewer (Updated)"
+                  content: "After rewatching, I appreciate it even more!"
+                  rating: 10
+                  createdAt: "2024-01-15T14:30:00"
+                  movieId: 1
+      responses:
+        '200':
+          description: Review updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewResponseDTO'
+              examples:
+                updated:
+                  summary: Updated review
+                  value:
+                    id: 1
+                    author: "John Reviewer (Updated)"
+                    content: "After rewatching, I appreciate it even more!"
+                    rating: 10
+                    createdAt: "2024-01-15T14:30:00"
+                    movieId: 1
+                    userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Request body is null
+          content:
+            application/json:
+              examples:
+                nullBody:
+                  summary: Null request body
+                  value: "Request body cannot be null."
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Review not found or not authorized to update
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Review not found
+                  value: "Review with id 999 not found."
+        '422':
+          description: Unprocessable Entity - Validation failed
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id must be greater than 0."
+                missingAuthor:
+                  summary: Missing author
+                  value: "Author is required"
+
+    delete:
+      tags:
+        - Review
+      summary: Delete a review
+      description: Deletes a review by ID. Only the owner or admin can delete.
+      operationId: deleteReview
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          description: ID of the review to delete
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '204':
+          description: Review deleted successfully
+        '400':
+          description: Bad Request - Invalid ID
+          content:
+            application/json:
+              examples:
+                invalidId:
+                  summary: Invalid ID
+                  value: "Id cannot be equal or less than 0"
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: Review not found or not authorized to delete
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: Review not found
+                  value: "Review with id 999 not found."
+
+  /api/Review/genres/{genreId}/movies/{movieId}/reviews:
+    get:
+      tags:
+        - Review
+      summary: Get reviews by genre and movie
+      description: Retrieves all reviews for a specific movie that belongs to a specific genre. Requires authentication.
+      operationId: getReviewsByGenreAndMovie
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: genreId
+          in: path
+          required: true
+          description: Genre ID
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+        - name: movieId
+          in: path
+          required: true
+          description: Movie ID
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Reviews retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewResponseDTO'
+              examples:
+                reviewsList:
+                  summary: Reviews for genre and movie
+                  value:
+                    - id: 1
+                      author: "John Reviewer"
+                      content: "Great action sequences!"
+                      rating: 9
+                      createdAt: "2024-01-15T14:30:00"
+                      movieId: 1
+                      userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        '400':
+          description: Bad Request - Invalid IDs
+          content:
+            application/json:
+              examples:
+                invalidIds:
+                  summary: Invalid IDs
+                  value: "GenreId and MovieId must be greater than 0."
+        '401':
+          description: Unauthorized - Authentication required
+        '404':
+          description: No reviews found for the specified genre and movie
+          content:
+            application/json:
+              examples:
+                notFound:
+                  summary: No reviews found
+                  value: "No reviews found for genreId 1 and movieId 1."
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Authorization header using the Bearer scheme.
+        Enter your token in the text input below.
+        Example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+  schemas:
+    # ==================== Authentication DTOs ====================
+    RegisterUserDTO:
+      type: object
+      description: Data transfer object for user registration
+      required:
+        - userName
+        - email
+        - password
+      properties:
+        userName:
+          type: string
+          description: Unique username for the account
+          example: "john_doe"
+          minLength: 1
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          description: User's password (should meet complexity requirements)
+          example: "SecureP@ssw0rd!"
+          minLength: 6
+
+    LoginDTO:
+      type: object
+      description: Data transfer object for user login
+      required:
+        - userName
+        - password
+      properties:
+        userName:
+          type: string
+          description: Username for authentication
+          example: "john_doe"
+        password:
+          type: string
+          format: password
+          description: User's password
+          example: "SecureP@ssw0rd!"
+
+    SuccessfulLoginDTO:
+      type: object
+      description: Response returned after successful login
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token for API authentication
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+    UserResponse:
+      type: object
+      description: User information returned after registration
+      properties:
+        id:
+          type: string
+          description: Unique user identifier (GUID)
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        userName:
+          type: string
+          description: Username
+          example: "john_doe"
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "john.doe@example.com"
+
+    # ==================== Actor DTOs ====================
+    CreateActorDTO:
+      type: object
+      description: Data transfer object for creating a new actor
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+          description: Actor's first name
+          example: "Leonardo"
+          minLength: 1
+        lastName:
+          type: string
+          description: Actor's last name
+          example: "DiCaprio"
+          minLength: 1
+        birthDate:
+          type: string
+          format: date-time
+          description: Actor's date of birth
+          example: "1974-11-11T00:00:00"
+        bio:
+          type: string
+          description: Actor's biography
+          example: "American actor and film producer known for his work in biopics and period films."
+          nullable: true
+
+    UpdateActorDTO:
+      type: object
+      description: Data transfer object for updating an existing actor
+      required:
+        - id
+        - firstName
+        - lastName
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the actor to update
+          example: 1
+          minimum: 1
+        firstName:
+          type: string
+          description: Actor's first name
+          example: "Leonardo"
+          minLength: 1
+        lastName:
+          type: string
+          description: Actor's last name
+          example: "DiCaprio"
+          minLength: 1
+        birthDate:
+          type: string
+          format: date-time
+          description: Actor's date of birth
+          example: "1974-11-11T00:00:00"
+        bio:
+          type: string
+          description: Actor's biography
+          example: "American actor, film producer, and environmentalist."
+          nullable: true
+
+    ActorResponseDTO:
+      type: object
+      description: Response data for an actor
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the actor
+          example: 1
+        firstName:
+          type: string
+          description: Actor's first name
+          example: "Leonardo"
+        lastName:
+          type: string
+          description: Actor's last name
+          example: "DiCaprio"
+        birthDate:
+          type: string
+          format: date-time
+          description: Actor's date of birth
+          example: "1974-11-11T00:00:00"
+        bio:
+          type: string
+          description: Actor's biography
+          example: "American actor and film producer"
+        userId:
+          type: string
+          description: ID of the user who created this actor
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    # ==================== Genre DTOs ====================
+    CreateGenreDTO:
+      type: object
+      description: Data transfer object for creating a new genre
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: Genre title
+          example: "Action"
+          minLength: 1
+        description:
+          type: string
+          description: Genre description
+          example: "Action movies featuring exciting sequences and stunts"
+          nullable: true
+
+    UpdateGenreDTO:
+      type: object
+      description: Data transfer object for updating an existing genre
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the genre to update
+          example: 1
+          minimum: 1
+        title:
+          type: string
+          description: Genre title
+          example: "Action/Adventure"
+          minLength: 1
+        description:
+          type: string
+          description: Genre description
+          example: "Action and adventure movies"
+          nullable: true
+
+    GenreResponseDTO:
+      type: object
+      description: Response data for a genre
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the genre
+          example: 1
+        title:
+          type: string
+          description: Genre title
+          example: "Action"
+        description:
+          type: string
+          description: Genre description
+          example: "Action movies featuring exciting sequences"
+        userId:
+          type: string
+          description: ID of the user who created this genre
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    # ==================== Movie DTOs ====================
+    CreateMovieDTO:
+      type: object
+      description: Data transfer object for creating a new movie
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          description: Movie title
+          example: "Inception"
+          minLength: 1
+        releaseDate:
+          type: string
+          format: date
+          description: Movie release date
+          example: "2010-07-16"
+        rating:
+          type: number
+          format: double
+          description: Movie rating (e.g., IMDb score)
+          example: 8.8
+          minimum: 0
+          maximum: 10
+        actorIds:
+          type: array
+          description: List of actor IDs to associate with the movie
+          items:
+            type: integer
+            format: int32
+          example: [1, 2, 3]
+          nullable: true
+        genreIds:
+          type: array
+          description: List of genre IDs to associate with the movie
+          items:
+            type: integer
+            format: int32
+          example: [1, 3]
+          nullable: true
+
+    UpdateMovieDTO:
+      type: object
+      description: Data transfer object for updating an existing movie
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the movie to update
+          example: 1
+          minimum: 1
+        title:
+          type: string
+          description: Movie title
+          example: "Inception - Director's Cut"
+          minLength: 1
+        releaseDate:
+          type: string
+          format: date
+          description: Movie release date
+          example: "2010-07-16"
+        rating:
+          type: number
+          format: double
+          description: Movie rating
+          example: 9.0
+          minimum: 0
+          maximum: 10
+        actorIds:
+          type: array
+          description: List of actor IDs (replaces existing associations)
+          items:
+            type: integer
+            format: int32
+          example: [1, 2, 3, 4]
+          nullable: true
+        genreIds:
+          type: array
+          description: List of genre IDs (replaces existing associations)
+          items:
+            type: integer
+            format: int32
+          example: [1, 2]
+          nullable: true
+
+    MovieResponseDTO:
+      type: object
+      description: Response data for a movie
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the movie
+          example: 1
+        title:
+          type: string
+          description: Movie title
+          example: "Inception"
+        releaseDate:
+          type: string
+          format: date
+          description: Movie release date
+          example: "2010-07-16"
+        rating:
+          type: number
+          format: double
+          description: Movie rating
+          example: 8.8
+        genres:
+          type: array
+          description: List of genres associated with the movie
+          items:
+            $ref: '#/components/schemas/GenreResponseDTO'
+          nullable: true
+        actors:
+          type: array
+          description: List of actors in the movie
+          items:
+            $ref: '#/components/schemas/ActorResponseDTO'
+          nullable: true
+        userId:
+          type: string
+          description: ID of the user who created this movie
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    # ==================== Review DTOs ====================
+    CreateReviewDTO:
+      type: object
+      description: Data transfer object for creating a new review
+      required:
+        - author
+        - movieId
+      properties:
+        author:
+          type: string
+          description: Name of the review author
+          example: "John Reviewer"
+          minLength: 1
+        content:
+          type: string
+          description: Review content/text
+          example: "This movie was absolutely amazing! The visuals were stunning and the plot kept me engaged throughout."
+          nullable: true
+        rating:
+          type: integer
+          format: int32
+          description: Rating given to the movie (typically 1-10)
+          example: 9
+          minimum: 1
+          maximum: 10
+        createdAt:
+          type: string
+          format: date-time
+          description: Date and time when the review was created
+          example: "2024-01-15T14:30:00"
+        movieId:
+          type: integer
+          format: int32
+          description: ID of the movie being reviewed
+          example: 1
+          minimum: 1
+        userId:
+          type: string
+          description: User ID (typically set by the system, not the client)
+          example: ""
+          nullable: true
+
+    UpdateReviewDTO:
+      type: object
+      description: Data transfer object for updating an existing review
+      required:
+        - id
+        - author
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the review to update
+          example: 1
+          minimum: 1
+        author:
+          type: string
+          description: Name of the review author
+          example: "John Reviewer"
+          minLength: 1
+        content:
+          type: string
+          description: Updated review content
+          example: "After rewatching, I appreciate this movie even more!"
+          nullable: true
+        rating:
+          type: integer
+          format: int32
+          description: Updated rating
+          example: 10
+          minimum: 1
+          maximum: 10
+        createdAt:
+          type: string
+          format: date-time
+          description: Original creation date (typically preserved)
+          example: "2024-01-15T14:30:00"
+        movieId:
+          type: integer
+          format: int32
+          description: ID of the movie being reviewed
+          example: 1
+          minimum: 1
+
+    ReviewResponseDTO:
+      type: object
+      description: Response data for a review
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Unique identifier of the review
+          example: 1
+        author:
+          type: string
+          description: Name of the review author
+          example: "John Reviewer"
+        content:
+          type: string
+          description: Review content
+          example: "Amazing movie with stunning visuals!"
+        rating:
+          type: integer
+          format: int32
+          description: Rating given to the movie
+          example: 9
+        createdAt:
+          type: string
+          format: date-time
+          description: Date and time when the review was created
+          example: "2024-01-15T14:30:00"
+        movieId:
+          type: integer
+          format: int32
+          description: ID of the movie being reviewed
+          example: 1
+        userId:
+          type: string
+          description: ID of the user who created this review
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    # ==================== Error Response ====================
+    ErrorResponse:
+      type: object
+      description: Standard error response
+      properties:
+        type:
+          type: string
+          description: Error type URI
+          example: "https://tools.ietf.org/html/rfc7231#section-6.5.1"
+        title:
+          type: string
+          description: Short error title
+          example: "Bad Request"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        detail:
+          type: string
+          description: Detailed error message
+          example: "The request body cannot be null."
+        traceId:
+          type: string
+          description: Trace ID for debugging
+          example: "00-1234567890abcdef-abcdef123456-00"
